@@ -403,6 +403,7 @@ function loadPage(page) {
   else if (page === 'trips') loadTrips();
   else if (page === 'maintenance') loadMaintenance();
   else if (page === 'finance') loadFinance();
+  else if (page === 'reports') loadReports();
   else if (page === 'audit') loadAuditLogs();
   else if (page === 'users') loadUsers();
 }
@@ -1466,6 +1467,505 @@ async function loadMaintenance() {
   } catch (err) {}
 }
 
+let reportsDataCache = []; // to store calculated reports data for CSV/PDF export
+
+function renderCostRevenueChart(data) {
+  const chartContainer = document.getElementById('chart-cost-revenue');
+  if (!chartContainer) return;
+  if (data.length === 0) {
+    chartContainer.innerHTML = '<div class="empty-message">No chart data available.</div>';
+    return;
+  }
+
+  const width = 500;
+  const height = 220;
+  const paddingLeft = 60;
+  const paddingRight = 20;
+  const paddingTop = 20;
+  const paddingBottom = 40;
+
+  const maxVal = Math.max(...data.map(d => Math.max(d.opCost, d.revenue)), 1000);
+
+  let svgContent = `<svg viewBox="0 0 ${width} ${height}" style="width: 100%; height: 100%; font-family: var(--font-family);">`;
+
+  const gridLines = 4;
+  for (let i = 0; i <= gridLines; i++) {
+    const y = paddingTop + ((height - paddingTop - paddingBottom) / gridLines) * i;
+    const val = Math.round(maxVal - (maxVal / gridLines) * i);
+    svgContent += `
+      <line x1="${paddingLeft}" y1="${y}" x2="${width - paddingRight}" y2="${y}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2 2"></line>
+      <text x="${paddingLeft - 10}" y="${y + 4}" fill="var(--text-secondary)" font-size="9" text-anchor="end">$${val.toLocaleString()}</text>
+    `;
+  }
+
+  const chartWidth = width - paddingLeft - paddingRight;
+  const chartHeight = height - paddingTop - paddingBottom;
+  const barWidth = Math.max(10, Math.min(25, (chartWidth / data.length) / 3));
+  const groupWidth = chartWidth / data.length;
+
+  data.forEach((d, idx) => {
+    const x = paddingLeft + idx * groupWidth + (groupWidth - barWidth * 2) / 2;
+    
+    const costH = (d.opCost / maxVal) * chartHeight;
+    const revH = (d.revenue / maxVal) * chartHeight;
+
+    const costY = height - paddingBottom - costH;
+    const revY = height - paddingBottom - revH;
+
+    svgContent += `
+      <rect x="${x}" y="${costY}" width="${barWidth}" height="${costH}" fill="var(--accent)" rx="3">
+        <title>${d.regNumber} Cost: $${d.opCost.toLocaleString()}</title>
+      </rect>
+      <rect x="${x + barWidth + 4}" y="${revY}" width="${barWidth}" height="${revH}" fill="var(--success)" rx="3">
+        <title>${d.regNumber} Revenue: $${d.revenue.toLocaleString()}</title>
+      </rect>
+      <text x="${x + barWidth + 2}" y="${height - paddingBottom + 16}" fill="var(--text-main)" font-size="10" font-weight="600" text-anchor="middle">${d.regNumber}</text>
+    `;
+  });
+
+  svgContent += '</svg>';
+  chartContainer.innerHTML = svgContent;
+}
+
+function renderRoiChart(data) {
+  const chartContainer = document.getElementById('chart-roi');
+  if (!chartContainer) return;
+  if (data.length === 0) {
+    chartContainer.innerHTML = '<div class="empty-message">No chart data available.</div>';
+    return;
+  }
+
+  const width = 500;
+  const height = 220;
+  const paddingLeft = 50;
+  const paddingRight = 20;
+  const paddingTop = 20;
+  const paddingBottom = 40;
+
+  const rois = data.map(d => d.roi);
+  const maxRoi = Math.max(...rois, 100);
+  const minRoi = Math.min(...rois, -50);
+
+  const chartHeight = height - paddingTop - paddingBottom;
+  const chartWidth = width - paddingLeft - paddingRight;
+
+  let baselineY = height - paddingBottom;
+  const totalRange = maxRoi - (minRoi < 0 ? minRoi : 0);
+  if (minRoi < 0) {
+    baselineY = paddingTop + (maxRoi / totalRange) * chartHeight;
+  }
+
+  let svgContent = `<svg viewBox="0 0 ${width} ${height}" style="width: 100%; height: 100%; font-family: var(--font-family);">`;
+
+  const gridLines = 4;
+  for (let i = 0; i <= gridLines; i++) {
+    const val = Math.round(maxRoi - (totalRange / gridLines) * i);
+    const ratio = (maxRoi - val) / totalRange;
+    const y = paddingTop + ratio * chartHeight;
+    
+    svgContent += `
+      <line x1="${paddingLeft}" y1="${y}" x2="${width - paddingRight}" y2="${y}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2 2"></line>
+      <text x="${paddingLeft - 10}" y="${y + 4}" fill="var(--text-secondary)" font-size="9" text-anchor="end">${val}%</text>
+    `;
+  }
+
+  svgContent += `
+    <line x1="${paddingLeft}" y1="${baselineY}" x2="${width - paddingRight}" y2="${baselineY}" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"></line>
+  `;
+
+  const barWidth = Math.max(12, Math.min(30, (chartWidth / data.length) / 2));
+  const groupWidth = chartWidth / data.length;
+
+  data.forEach((d, idx) => {
+    const x = paddingLeft + idx * groupWidth + (groupWidth - barWidth) / 2;
+    
+    let barH = 0;
+    let barY = baselineY;
+    let barColor = 'var(--success)';
+
+    if (d.roi >= 0) {
+      barH = (d.roi / totalRange) * chartHeight;
+      barY = baselineY - barH;
+      barColor = 'var(--success)';
+    } else {
+      barH = (Math.abs(d.roi) / totalRange) * chartHeight;
+      barY = baselineY;
+      barColor = 'var(--danger)';
+    }
+
+    svgContent += `
+      <rect x="${x}" y="${barY}" width="${barWidth}" height="${Math.max(1, barH)}" fill="${barColor}" rx="3">
+        <title>${d.regNumber} ROI: ${Math.round(d.roi)}%</title>
+      </rect>
+      <text x="${x + barWidth / 2}" y="${height - paddingBottom + 16}" fill="var(--text-main)" font-size="10" font-weight="600" text-anchor="middle">${d.regNumber}</text>
+    `;
+  });
+
+  svgContent += '</svg>';
+  chartContainer.innerHTML = svgContent;
+}
+
+function exportReportsToCSV() {
+  if (reportsDataCache.length === 0) {
+    showToast('No data available to export.', 'error');
+    return;
+  }
+
+  let csvContent = 'Vehicle,Make,Model,Distance (km),Fuel (L),Efficiency (km/L),Trips Count,Operational Cost ($),Estimated Revenue ($),ROI (%)\n';
+
+  reportsDataCache.forEach(item => {
+    csvContent += `"${item.regNumber}","${item.make}","${item.modelName}",${item.distance},${item.fuelLiters},${item.efficiency.toFixed(2)},${item.tripsCount},${item.opCost},${item.revenue},${Math.round(item.roi)}\n`;
+  });
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `TransitOps_Analytics_Report_${new Date().toISOString().substring(0, 10)}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast('Reports CSV exported successfully!');
+}
+
+function exportReportsToPDF() {
+  if (reportsDataCache.length === 0) {
+    showToast('No data available to export.', 'error');
+    return;
+  }
+
+  const printWindow = window.open('', '_blank');
+  const costRevenueSVG = document.getElementById('chart-cost-revenue').innerHTML;
+  const roiSVG = document.getElementById('chart-roi').innerHTML;
+  const tableHTML = document.getElementById('reports-table').outerHTML;
+  const avgFuelText = document.getElementById('rep-avg-fuel-eff').textContent;
+  const fleetUtilText = document.getElementById('rep-fleet-util').textContent;
+  const opCostText = document.getElementById('rep-total-op-cost').textContent;
+  const avgRoiText = document.getElementById('rep-avg-roi').textContent;
+
+  printWindow.document.write(`
+    <html>
+    <head>
+      <title>TransitOps Operational Analytics & ROI Report</title>
+      <style>
+        body {
+          font-family: 'Inter', sans-serif;
+          color: #1E293B;
+          padding: 40px;
+          background-color: #fff;
+          line-height: 1.5;
+        }
+        h1 {
+          font-size: 26px;
+          margin-bottom: 5px;
+          color: #0F172A;
+        }
+        .subtitle {
+          font-size: 13px;
+          color: #64748B;
+          margin-bottom: 30px;
+        }
+        .grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 20px;
+          margin-bottom: 40px;
+        }
+        .card {
+          border: 1px solid #E2E8F0;
+          border-radius: 12px;
+          padding: 20px;
+          text-align: center;
+          background: #F8FAFC;
+        }
+        .card-title {
+          font-size: 10px;
+          font-weight: 700;
+          text-transform: uppercase;
+          color: #64748B;
+          letter-spacing: 0.5px;
+          margin-bottom: 8px;
+        }
+        .card-value {
+          font-size: 22px;
+          font-weight: 800;
+          color: #0F172A;
+        }
+        .charts-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 24px;
+          margin-bottom: 40px;
+          page-break-inside: avoid;
+        }
+        .chart-card {
+          border: 1px solid #E2E8F0;
+          border-radius: 12px;
+          padding: 20px;
+        }
+        .chart-card h2 {
+          font-size: 14px;
+          font-weight: 700;
+          margin-bottom: 15px;
+          border-bottom: 1px solid #F1F5F9;
+          padding-bottom: 8px;
+          color: #0F172A;
+        }
+        .chart-container {
+          height: 200px;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 20px;
+          page-break-inside: auto;
+        }
+        tr {
+          page-break-inside: avoid;
+          page-break-after: auto;
+        }
+        th {
+          background: #F1F5F9;
+          font-weight: 600;
+          font-size: 11px;
+          text-transform: uppercase;
+          color: #475569;
+          padding: 12px 16px;
+          text-align: left;
+          border-bottom: 2px solid #E2E8F0;
+        }
+        td {
+          padding: 12px 16px;
+          border-bottom: 1px solid #E2E8F0;
+          font-size: 13px;
+          color: #334155;
+        }
+        .badge {
+          font-size: 10px;
+          font-weight: 700;
+          padding: 3px 8px;
+          border-radius: 30px;
+          display: inline-block;
+          background: #DCFCE7;
+          color: #15803D;
+        }
+        .badge-negative {
+          background: #FEE2E2;
+          color: #B91C1C;
+        }
+        svg text {
+          fill: #475569 !important;
+        }
+        svg line {
+          stroke: #E2E8F0 !important;
+        }
+        @media print {
+          body { padding: 0; }
+          .no-print { display: none; }
+        }
+      </style>
+    </head>
+    <body>
+      <div>
+        <h1>TransitOps Operational Analytics & ROI Report</h1>
+        <div class="subtitle">Generated on ${new Date().toLocaleString()} | System Administrator</div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="card-title">Avg Fuel Efficiency</div>
+          <div class="card-value">${avgFuelText}</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Fleet Utilization</div>
+          <div class="card-value">${fleetUtilText}</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Total Operational Cost</div>
+          <div class="card-value">${opCostText}</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Average Vehicle ROI</div>
+          <div class="card-value">${avgRoiText}</div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h2>Cost vs. Estimated Revenue by Vehicle</h2>
+          <div class="chart-container">${costRevenueSVG}</div>
+        </div>
+        <div class="chart-card">
+          <h2>Vehicle ROI Comparison (%)</h2>
+          <div class="chart-container">${roiSVG}</div>
+        </div>
+      </div>
+
+      <div style="border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; margin-top: 30px;">
+        <h2 style="font-size: 14px; font-weight: 700; color: #0F172A; margin-bottom: 15px; border-bottom: 1px solid #F1F5F9; padding-bottom: 8px;">Vehicle Metrics Breakdown</h2>
+        ${tableHTML}
+      </div>
+
+      <script>
+        document.querySelectorAll('#reports-table .badge').forEach(b => {
+          const val = parseInt(b.textContent);
+          if (val < 0) {
+            b.className = 'badge badge-negative';
+          } else {
+            b.className = 'badge';
+          }
+        });
+        
+        window.onload = function() {
+          setTimeout(function() {
+            window.print();
+            window.close();
+          }, 500);
+        };
+      </script>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+}
+
+async function loadReports() {
+  const container = document.getElementById('reports-list');
+  if (!container) return;
+  container.innerHTML = '<tr><td colspan="8" class="empty-message">Loading Operational Analytics...</td></tr>';
+
+  try {
+    const [vehiclesRes, tripsRes, fuelRes, maintRes, expensesRes] = await Promise.all([
+      fetchAPI('/api/vehicles?limit=1000'),
+      fetchAPI('/api/trips?status=Completed&limit=1000'),
+      fetchAPI('/api/expenses/fuel?limit=1000'),
+      fetchAPI('/api/maintenance?limit=1000'),
+      fetchAPI('/api/expenses?status=Approved&limit=1000')
+    ]);
+
+    const vehicles = vehiclesRes?.data?.vehicles || [];
+    const trips = tripsRes?.data?.trips || [];
+    const fuelLogs = fuelRes?.data?.fuelLogs || [];
+    const maintLogs = maintRes?.data?.logs || [];
+    const expenses = expensesRes?.data?.expenses || [];
+
+    const totalVehiclesCount = vehicles.length;
+    const activeVehiclesCount = vehicles.filter(v => v.status === 'On Trip').length;
+    const utilizationRate = totalVehiclesCount > 0 ? (activeVehiclesCount / totalVehiclesCount) * 100 : 0;
+
+    const vehicleMetrics = {};
+    vehicles.forEach(v => {
+      vehicleMetrics[v._id] = {
+        id: v._id,
+        regNumber: v.registrationNumber,
+        make: v.make,
+        modelName: v.modelName,
+        distance: 0,
+        fuelLiters: 0,
+        fuelCost: 0,
+        maintCost: 0,
+        otherCost: 0,
+        tripsCount: 0
+      };
+    });
+
+    trips.forEach(t => {
+      const vId = t.vehicle?._id || t.vehicle;
+      if (vehicleMetrics[vId]) {
+        vehicleMetrics[vId].distance += t.distanceKm || 0;
+        vehicleMetrics[vId].tripsCount += 1;
+      }
+    });
+
+    fuelLogs.forEach(f => {
+      const vId = f.vehicle?._id || f.vehicle;
+      if (vehicleMetrics[vId]) {
+        vehicleMetrics[vId].fuelLiters += f.fuelLiters || 0;
+        vehicleMetrics[vId].fuelCost += f.cost || 0;
+      }
+    });
+
+    maintLogs.forEach(m => {
+      const vId = m.vehicle?._id || m.vehicle;
+      if (vehicleMetrics[vId] && m.status === 'Completed') {
+        vehicleMetrics[vId].maintCost += m.cost || 0;
+      }
+    });
+
+    expenses.forEach(e => {
+      const vId = e.vehicle?._id || e.vehicle;
+      if (vehicleMetrics[vId]) {
+        vehicleMetrics[vId].otherCost += e.amount || 0;
+      }
+    });
+
+    const reportsList = [];
+    let fleetTotalDistance = 0;
+    let fleetTotalFuel = 0;
+    let fleetTotalCost = 0;
+    let fleetTotalRevenue = 0;
+    let fleetAvgRoiSum = 0;
+    let fleetRoiCount = 0;
+
+    Object.values(vehicleMetrics).forEach(vm => {
+      const efficiency = vm.fuelLiters > 0 ? (vm.distance / vm.fuelLiters) : 0;
+      const opCost = vm.fuelCost + vm.maintCost + vm.otherCost;
+      const revenue = vm.distance * 3.0; // $3.00 revenue per km
+      const netProfit = revenue - opCost;
+      const roi = opCost > 0 ? (netProfit / opCost) * 100 : (revenue > 0 ? 100 : 0);
+
+      fleetTotalDistance += vm.distance;
+      fleetTotalFuel += vm.fuelLiters;
+      fleetTotalCost += opCost;
+      fleetTotalRevenue += revenue;
+      fleetAvgRoiSum += roi;
+      fleetRoiCount += 1;
+
+      reportsList.push({
+        ...vm,
+        efficiency,
+        opCost,
+        revenue,
+        roi
+      });
+    });
+
+    reportsDataCache = reportsList;
+
+    const fleetAvgFuelEff = fleetTotalFuel > 0 ? (fleetTotalDistance / fleetTotalFuel) : 0;
+    const fleetAvgRoi = fleetRoiCount > 0 ? (fleetAvgRoiSum / fleetRoiCount) : 0;
+
+    document.getElementById('rep-avg-fuel-eff').textContent = `${fleetAvgFuelEff.toFixed(2)} km/L`;
+    document.getElementById('rep-fleet-util').textContent = `${utilizationRate.toFixed(1)}%`;
+    document.getElementById('rep-total-op-cost').textContent = `$ ${fleetTotalCost.toLocaleString()}`;
+    document.getElementById('rep-avg-roi').textContent = `${Math.round(fleetAvgRoi)}%`;
+
+    container.innerHTML = '';
+    reportsList.forEach(item => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td><strong>${item.regNumber}</strong><br><span style="font-size: 11px; color: var(--text-secondary);">${item.make} ${item.modelName}</span></td>
+        <td>${item.distance.toLocaleString()} km</td>
+        <td>${item.fuelLiters.toLocaleString()} L</td>
+        <td>${item.efficiency > 0 ? `${item.efficiency.toFixed(2)} km/L` : '—'}</td>
+        <td>${item.tripsCount}</td>
+        <td>$ ${item.opCost.toLocaleString()}</td>
+        <td>$ ${item.revenue.toLocaleString()}</td>
+        <td><span class="badge ${item.roi >= 0 ? 'status-Available' : 'status-Retired'}">${Math.round(item.roi)}%</span></td>
+      `;
+      container.appendChild(row);
+    });
+
+    renderCostRevenueChart(reportsList);
+    renderRoiChart(reportsList);
+
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = '<tr><td colspan="8" class="empty-message" style="color:var(--danger)">Failed to load operational analytics.</td></tr>';
+  }
+}
+
 async function loadAuditLogs() {
   const container = document.getElementById('audit-list');
   container.innerHTML = '<tr><td colspan="6" class="empty-message">Loading Security logs...</td></tr>';
@@ -2165,4 +2665,12 @@ document.querySelectorAll('.toggle-stat-btn').forEach(btn => {
       console.error(err);
     }
   });
+});
+
+document.getElementById('btn-export-reports-csv')?.addEventListener('click', () => {
+  exportReportsToCSV();
+});
+
+document.getElementById('btn-export-reports-pdf')?.addEventListener('click', () => {
+  exportReportsToPDF();
 });
