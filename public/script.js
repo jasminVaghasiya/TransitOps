@@ -22,9 +22,9 @@ const toBase64 = file => new Promise((resolve, reject) => {
 const ROLE_ABILITIES = {
   fleet_manager: {
     read: ['Vehicle', 'Maintenance', 'Driver', 'Trip', 'FuelLog', 'Expense', 'Report', 'Dashboard'],
-    create: ['Vehicle', 'Trip', 'Expense', 'FuelLog', 'Maintenance'],
-    update: ['Vehicle', 'Trip', 'Expense', 'FuelLog', 'Maintenance'],
-    delete: ['Vehicle', 'Trip', 'Expense', 'FuelLog', 'Maintenance'],
+    create: ['Vehicle', 'Trip', 'Expense', 'FuelLog', 'Maintenance', 'Driver'],
+    update: ['Vehicle', 'Trip', 'Expense', 'FuelLog', 'Maintenance', 'Driver'],
+    delete: ['Vehicle', 'Trip', 'Expense', 'FuelLog', 'Maintenance', 'Driver'],
     export: ['Report'],
   },
   driver: {
@@ -382,9 +382,9 @@ function initializeDashboard() {
 function configureNavigation(role) {
   const hiddenSelectors = {
     fleet_manager: [],
-    driver: ['#nav-dashboard', '#nav-documents', '#nav-reports', '#nav-settings', '#nav-users'],
-    safety_officer: ['#nav-finance', '#nav-maintenance', '#nav-reports', '#nav-documents', '#nav-users'],
-    financial_analyst: ['#nav-maintenance', '#nav-settings', '#nav-complaints', '#nav-users'],
+    driver: ['#nav-dashboard', '#nav-reports', '#nav-settings'],
+    safety_officer: ['#nav-finance', '#nav-maintenance', '#nav-reports'],
+    financial_analyst: ['#nav-maintenance', '#nav-settings', '#nav-complaints'],
   };
 
   // Reset menu lists visibility
@@ -492,9 +492,9 @@ function loadPage(page) {
   if (currentUser) {
     const hidden = {
       fleet_manager: [],
-      driver: ['dashboard', 'documents', 'reports', 'settings', 'users'],
-      safety_officer: ['finance', 'maintenance', 'reports', 'documents', 'users'],
-      financial_analyst: ['maintenance', 'settings', 'complaints', 'users'],
+      driver: ['dashboard', 'reports', 'settings'],
+      safety_officer: ['finance', 'maintenance', 'reports'],
+      financial_analyst: ['maintenance', 'settings', 'complaints'],
     };
     const restrictedPages = hidden[currentUser.role];
     if (restrictedPages && restrictedPages.includes(page)) {
@@ -525,6 +525,7 @@ function loadPage(page) {
   else if (page === 'reports') loadReports();
   else if (page === 'audit') loadAuditLogs();
   else if (page === 'users') loadUsers();
+  else if (page === 'reports') loadReports();
 }
 
 // ==========================================
@@ -1469,6 +1470,54 @@ async function loadTrips() {
       });
     });
 
+    document.querySelectorAll('.dispatch-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        try {
+          await fetchAPI(`/api/trips/${btn.dataset.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: 'Dispatched' })
+          });
+          showToast('Trip successfully dispatched!');
+          loadTrips();
+        } catch (err) {
+          console.error(err);
+        }
+      });
+    });
+
+    document.querySelectorAll('.complete-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        try {
+          await fetchAPI(`/api/trips/${btn.dataset.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: 'Completed' })
+          });
+          showToast('Trip completed successfully.');
+          loadTrips();
+        } catch (err) {
+          console.error(err);
+        }
+      });
+    });
+
+    document.querySelectorAll('.cancel-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        try {
+          await fetchAPI(`/api/trips/${btn.dataset.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: 'Cancelled' })
+          });
+          showToast('Trip cancelled.');
+          loadTrips();
+        } catch (err) {
+          console.error(err);
+        }
+      });
+    });
+
   } catch (err) {}
 }
 
@@ -1855,7 +1904,7 @@ async function loadMaintenance() {
       return;
     }
 
-    const hasActions = can('close', 'Maintenance');
+    const hasActions = can('close', 'Maintenance') || can('update', 'Maintenance');
     const actionsHeader = document.querySelector('#maintenance-table th:last-child');
     if (actionsHeader) {
       if (hasActions) actionsHeader.classList.remove('hidden');
@@ -1875,21 +1924,43 @@ async function loadMaintenance() {
         <td><span class="badge status-${log.status.replace(' ', '-')}">${log.status}</span></td>
         ${hasActions ? `
         <td>
-          ${isInProgress ? `<button class="btn btn-outline close-repair-btn" data-id="${log._id}" style="padding:4px 8px; font-size:11px; color:var(--success);">Complete Repair</button>` : '—'}
+          ${isActive ? `
+            <button class="btn complete-repair-btn" data-id="${log._id}" style="padding:4px 8px; font-size:11px; background:var(--success); border-color:var(--success); color:#fff; cursor:pointer; font-weight:600; border-radius:4px; margin-right:6px;">Complete</button>
+            <button class="btn cancel-repair-btn" data-id="${log._id}" style="padding:4px 8px; font-size:11px; background:var(--danger); border-color:var(--danger); color:#fff; cursor:pointer; font-weight:600; border-radius:4px;">Cancel</button>
+          ` : '—'}
         </td>
         ` : ''}
       `;
       container.appendChild(row);
     });
 
-    document.querySelectorAll('.close-repair-btn').forEach(btn => {
+    document.querySelectorAll('.complete-repair-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
-        await fetchAPI(`/api/maintenance/${btn.dataset.id}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ status: 'Completed' })
-        });
-        showToast('Repair completed. Vehicle released.');
-        loadMaintenance();
+        try {
+          await fetchAPI(`/api/maintenance/${btn.dataset.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: 'Completed' })
+          });
+          showToast('Repair marked as Completed. Vehicle released.');
+          loadMaintenance();
+        } catch (err) {
+          console.error(err);
+        }
+      });
+    });
+
+    document.querySelectorAll('.cancel-repair-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try {
+          await fetchAPI(`/api/maintenance/${btn.dataset.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: 'Cancelled' })
+          });
+          showToast('Repair marked as Cancelled. Vehicle released.');
+          loadMaintenance();
+        } catch (err) {
+          console.error(err);
+        }
       });
     });
   } catch (err) {}
@@ -2883,11 +2954,12 @@ async function renderTripForm() {
       `;
     } else {
       const availableDrivers = driversData.data.drivers.filter(d => d.status === 'Available');
-      let drvOptions = availableDrivers.map(d => `<option value="${d._id}">${d.name}</option>`).join('');
       drvFieldHTML = `
-        <div class="input-group">
-          <select id="trip-drv" required>${drvOptions ? drvOptions : '<option value="">No available drivers</option>'}</select>
-          <label for="trip-drv"><i class="fa-solid fa-user-tie"></i> Select Available Driver</label>
+        <div class="input-group" style="position: relative;">
+          <input type="text" id="trip-drv-search" required autocomplete="off" placeholder=" ">
+          <input type="hidden" id="trip-drv" required>
+          <label for="trip-drv-search"><i class="fa-solid fa-user-tie"></i> Search Available Driver</label>
+          <div class="autocomplete-results hidden" id="trip-drv-results"></div>
         </div>
       `;
     }
@@ -2922,6 +2994,63 @@ async function renderTripForm() {
         <button type="submit" class="btn btn-primary btn-block">Schedule Trip (Draft)</button>
       </form>
     `;
+
+    // Wire up driver name autocomplete suggestions logic
+    if (currentUser.role !== 'driver') {
+      const searchInput = document.getElementById('trip-drv-search');
+      const hiddenInput = document.getElementById('trip-drv');
+      const resultsContainer = document.getElementById('trip-drv-results');
+      const availableDrivers = driversData.data.drivers.filter(d => d.status === 'Available');
+
+      if (searchInput && hiddenInput && resultsContainer) {
+        searchInput.addEventListener('input', () => {
+          const query = searchInput.value.toLowerCase().trim();
+          if (!query) {
+            resultsContainer.innerHTML = '';
+            resultsContainer.classList.add('hidden');
+            hiddenInput.value = '';
+            return;
+          }
+
+          const matches = availableDrivers.filter(d => d.name.toLowerCase().includes(query));
+          if (matches.length === 0) {
+            resultsContainer.innerHTML = '<div class="autocomplete-item" style="color:var(--text-secondary); cursor:default;">No available drivers found</div>';
+            resultsContainer.classList.remove('hidden');
+            hiddenInput.value = '';
+            return;
+          }
+
+          resultsContainer.innerHTML = '';
+          matches.forEach(d => {
+            const item = document.createElement('div');
+            item.className = 'autocomplete-item';
+
+            // Bold the matching text query segment
+            const idx = d.name.toLowerCase().indexOf(query);
+            const before = d.name.substring(0, idx);
+            const matchPart = d.name.substring(idx, idx + query.length);
+            const after = d.name.substring(idx + query.length);
+            item.innerHTML = `${before}<strong>${matchPart}</strong>${after}`;
+
+            item.addEventListener('click', () => {
+              searchInput.value = d.name;
+              hiddenInput.value = d._id;
+              resultsContainer.innerHTML = '';
+              resultsContainer.classList.add('hidden');
+            });
+            resultsContainer.appendChild(item);
+          });
+          resultsContainer.classList.remove('hidden');
+        });
+
+        // Hide when clicking outside
+        document.addEventListener('click', (e) => {
+          if (e.target !== searchInput && e.target !== resultsContainer) {
+            resultsContainer.classList.add('hidden');
+          }
+        });
+      }
+    }
 
     document.getElementById('create-trip-form').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -3179,6 +3308,298 @@ document.querySelectorAll('.toggle-stat-btn').forEach(btn => {
   });
 });
 
+let currentAnalyticsData = null;
+
+async function loadReports() {
+  const tableBody = document.getElementById('report-table-tbody');
+  if (tableBody) tableBody.innerHTML = '<tr><td colspan="11" class="empty-message">Loading reports data...</td></tr>';
+
+  try {
+    const res = await fetchAPI('/api/dashboard/analytics');
+    if (res && res.status === 'success') {
+      const data = res.data;
+      currentAnalyticsData = data;
+
+      // Update Averages/Totals
+      document.getElementById('report-avg-fuel-efficiency').textContent = `${data.summary.avgFleetFuelEfficiency} Km/L`;
+      document.getElementById('report-fleet-utilization').textContent = `${data.summary.fleetUtilization}%`;
+      document.getElementById('report-total-operational-cost').textContent = `$${data.summary.totalFleetOperationalCost.toLocaleString()}`;
+      document.getElementById('report-avg-roi').textContent = `${data.summary.avgFleetROI}%`;
+
+      // Update Table
+      if (tableBody) {
+        tableBody.innerHTML = '';
+        if (data.vehicles.length === 0) {
+          tableBody.innerHTML = '<tr><td colspan="11" class="empty-message">No vehicles recorded.</td></tr>';
+        } else {
+          data.vehicles.forEach(v => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td><strong>${v.registrationNumber}</strong> <span style="font-size:10px; color:var(--text-secondary)">(${v.make} ${v.modelName})</span></td>
+              <td>${v.totalDistance.toLocaleString()} Km</td>
+              <td>${v.totalFuelLiters.toLocaleString()} L</td>
+              <td>$${v.totalFuelCost.toLocaleString()}</td>
+              <td>$${v.totalMaintCost.toLocaleString()}</td>
+              <td>$${v.totalExpenseCost.toLocaleString()}</td>
+              <td><span class="badge" style="background:rgba(245, 158, 11, 0.1); color:var(--warning);">${v.fuelEfficiency} Km/L</span></td>
+              <td><strong>$${v.operationalCost.toLocaleString()}</strong></td>
+              <td>$${v.estimatedRevenue.toLocaleString()}</td>
+              <td style="color:${v.netProfit >= 0 ? 'var(--success)' : 'var(--danger)'}">$${v.netProfit.toLocaleString()}</td>
+              <td><span class="badge" style="background:${v.roi >= 0 ? 'var(--success-glow)' : 'var(--danger-glow)'}; color:${v.roi >= 0 ? 'var(--success)' : 'var(--danger)'}; font-weight:700;">${v.roi}%</span></td>
+            `;
+            tableBody.appendChild(row);
+          });
+        }
+      }
+
+      // Render Visualizations
+      renderReportsGraphs(data.vehicles);
+    }
+  } catch (err) {
+    console.error('Failed to load reports:', err);
+    if (tableBody) tableBody.innerHTML = '<tr><td colspan="11" class="empty-message" style="color:var(--danger)">Failed to fetch analytics metrics.</td></tr>';
+  }
+}
+
+function renderReportsGraphs(vehicles) {
+  // Graph 1: Fuel Efficiency comparison
+  const maxFE = Math.max(...vehicles.map(v => v.fuelEfficiency), 5);
+  let feBars = '';
+  let feLabels = '';
+  vehicles.forEach((v, index) => {
+    const x = 50 + index * 80;
+    const barHeight = (v.fuelEfficiency / maxFE) * 120;
+    const y = 160 - barHeight;
+    feBars += `<rect x="${x}" y="${y}" width="28" height="${barHeight}" fill="var(--warning)" rx="4" style="transition: var(--transition-smooth);"></rect>`;
+    feBars += `<text x="${x + 14}" y="${y - 6}" fill="var(--text-main)" font-size="9" font-weight="700" text-anchor="middle">${v.fuelEfficiency}</text>`;
+    feLabels += `<text x="${x + 14}" y="180" fill="var(--text-secondary)" font-size="9" font-weight="600" text-anchor="middle">${v.registrationNumber}</text>`;
+  });
+
+  const graph1El = document.getElementById('report-fuel-efficiency-graph');
+  if (graph1El) {
+    graph1El.innerHTML = `
+      <svg viewBox="0 0 400 200" style="width: 100%; height: 100%;">
+        <line x1="30" y1="20" x2="380" y2="20" stroke="rgba(255,255,255,0.05)"></line>
+        <line x1="30" y1="90" x2="380" y2="90" stroke="rgba(255,255,255,0.05)"></line>
+        <line x1="30" y1="160" x2="380" y2="160" stroke="rgba(255,255,255,0.1)"></line>
+        ${feBars}
+        ${feLabels}
+      </svg>
+    `;
+  }
+
+  // Graph 2: Vehicle ROI (%) comparison
+  const maxROI = Math.max(...vehicles.map(v => Math.abs(v.roi)), 10);
+  let roiBars = '';
+  let roiLabels = '';
+  vehicles.forEach((v, index) => {
+    const x = 50 + index * 80;
+    const barHeight = (Math.abs(v.roi) / maxROI) * 120;
+    const y = 160 - barHeight;
+    const color = v.roi >= 0 ? 'var(--success)' : 'var(--danger)';
+    roiBars += `<rect x="${x}" y="${y}" width="28" height="${barHeight}" fill="${color}" rx="4" style="transition: var(--transition-smooth);"></rect>`;
+    roiBars += `<text x="${x + 14}" y="${y - 6}" fill="var(--text-main)" font-size="9" font-weight="700" text-anchor="middle">${v.roi}%</text>`;
+    roiLabels += `<text x="${x + 14}" y="180" fill="var(--text-secondary)" font-size="9" font-weight="600" text-anchor="middle">${v.registrationNumber}</text>`;
+  });
+
+  const graph2El = document.getElementById('report-roi-graph');
+  if (graph2El) {
+    graph2El.innerHTML = `
+      <svg viewBox="0 0 400 200" style="width: 100%; height: 100%;">
+        <line x1="30" y1="20" x2="380" y2="20" stroke="rgba(255,255,255,0.05)"></line>
+        <line x1="30" y1="90" x2="380" y2="90" stroke="rgba(255,255,255,0.05)"></line>
+        <line x1="30" y1="160" x2="380" y2="160" stroke="rgba(255,255,255,0.1)"></line>
+        ${roiBars}
+        ${roiLabels}
+      </svg>
+    `;
+  }
+}
+
+function exportCSV(analyticsData) {
+  let csvContent = "data:text/csv;charset=utf-8,";
+  csvContent += "Vehicle,Distance (Km),Fuel (L),Fuel Cost,Maint Cost,Other Expenses,Fuel Efficiency,Operational Cost,Estimated Revenue,Net Profit,ROI (%)\n";
+
+  analyticsData.vehicles.forEach(v => {
+    const row = [
+      v.registrationNumber,
+      v.totalDistance,
+      v.totalFuelLiters,
+      `$${v.totalFuelCost}`,
+      `$${v.totalMaintCost}`,
+      `$${v.totalExpenseCost}`,
+      `${v.fuelEfficiency} Km/L`,
+      `$${v.operationalCost}`,
+      `$${v.estimatedRevenue}`,
+      `$${v.netProfit}`,
+      `${v.roi}%`
+    ].join(",");
+    csvContent += row + "\n";
+  });
+
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `TransitOps_Fleet_Analytics_${new Date().toISOString().slice(0,10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+document.getElementById('btn-export-csv')?.addEventListener('click', () => {
+  if (currentAnalyticsData) exportCSV(currentAnalyticsData);
+  else showToast('No reports data loaded to export.', 'error');
+});
+
+document.getElementById('btn-export-pdf')?.addEventListener('click', () => {
+  window.print();
+});
+
+function convertToCustomDropdown(selectId) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+
+  // Check if custom dropdown wrapper already exists
+  let wrapper = select.nextElementSibling;
+  if (wrapper && wrapper.classList.contains('custom-select-wrapper')) {
+    // Already customized, update text and refresh option list
+    const triggerText = wrapper.querySelector('.custom-select-trigger span');
+    const selectedOption = select.options[select.selectedIndex];
+    if (triggerText && selectedOption) {
+      triggerText.textContent = selectedOption.text;
+    }
+    
+    const optionsContainer = wrapper.querySelector('.custom-select-options');
+    if (optionsContainer) {
+      optionsContainer.innerHTML = '';
+      Array.from(select.options).forEach(opt => {
+        const optEl = document.createElement('div');
+        optEl.className = 'custom-option';
+        optEl.dataset.value = opt.value;
+        optEl.textContent = opt.text;
+        if (opt.value === select.value) {
+          optEl.classList.add('selected');
+        }
+        optEl.addEventListener('click', (e) => {
+          e.stopPropagation();
+          select.value = opt.value;
+          if (triggerText) triggerText.textContent = opt.text;
+          optionsContainer.classList.add('hidden');
+          wrapper.querySelector('.custom-select-trigger').classList.remove('active');
+          
+          optionsContainer.querySelectorAll('.custom-option').forEach(child => child.classList.remove('selected'));
+          optEl.classList.add('selected');
+          
+          select.dispatchEvent(new Event('change'));
+        });
+        optionsContainer.appendChild(optEl);
+      });
+    }
+    return;
+  }
+
+  select.style.display = 'none';
+
+  wrapper = document.createElement('div');
+  wrapper.className = 'custom-select-wrapper';
+
+  const trigger = document.createElement('div');
+  trigger.className = 'custom-select-trigger';
+  
+  const selectedOption = select.options[select.selectedIndex] || select.options[0];
+  trigger.innerHTML = `<span>${selectedOption ? selectedOption.text : ''}</span><i class="fa-solid fa-chevron-down"></i>`;
+  wrapper.appendChild(trigger);
+
+  const optionsContainer = document.createElement('div');
+  optionsContainer.className = 'custom-select-options hidden';
+
+  Array.from(select.options).forEach(opt => {
+    const optEl = document.createElement('div');
+    optEl.className = 'custom-option';
+    optEl.dataset.value = opt.value;
+    optEl.textContent = opt.text;
+    if (opt.value === select.value) {
+      optEl.classList.add('selected');
+    }
+    optEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      select.value = opt.value;
+      trigger.querySelector('span').textContent = opt.text;
+      optionsContainer.classList.add('hidden');
+      trigger.classList.remove('active');
+      
+      optionsContainer.querySelectorAll('.custom-option').forEach(child => child.classList.remove('selected'));
+      optEl.classList.add('selected');
+
+      select.dispatchEvent(new Event('change'));
+    });
+    optionsContainer.appendChild(optEl);
+  });
+
+  wrapper.appendChild(optionsContainer);
+
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    
+    // Close other custom dropdowns
+    document.querySelectorAll('.custom-select-options').forEach(el => {
+      if (el !== optionsContainer) el.classList.add('hidden');
+    });
+    document.querySelectorAll('.custom-select-trigger').forEach(el => {
+      if (el !== trigger) el.classList.remove('active');
+    });
+
+    optionsContainer.classList.toggle('hidden');
+    trigger.classList.toggle('active');
+  });
+
+  select.parentNode.insertBefore(wrapper, select.nextSibling);
+}
+
+function initializeCustomDropdowns(container = document) {
+  container.querySelectorAll('select.input-select, .modal-body select, .login-form-panel select').forEach(select => {
+    if (!select.id) {
+      select.id = 'select-' + Math.random().toString(36).substr(2, 9);
+    }
+    convertToCustomDropdown(select.id);
+  });
+}
+
+// Global click listener to close open custom selects
+document.addEventListener('click', () => {
+  document.querySelectorAll('.custom-select-options').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.custom-select-trigger').forEach(el => el.classList.remove('active'));
+});
+
+// Dynamic Observer for DOM changes to auto-bind custom select elements
+const selectObserver = new MutationObserver((mutations) => {
+  let shouldUpdate = false;
+  for (const mutation of mutations) {
+    if (mutation.addedNodes.length > 0) {
+      shouldUpdate = true;
+      break;
+    }
+    if (mutation.target === modalContainer && mutation.attributeName === 'class' && !modalContainer.classList.contains('hidden')) {
+      shouldUpdate = true;
+      break;
+    }
+  }
+  if (shouldUpdate) {
+    selectObserver.disconnect();
+    initializeCustomDropdowns();
+    observeSelects();
+  }
+});
+
+function observeSelects() {
+  selectObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['class']
+  });
+}
+
 async function restoreSession() {
   const loadingOverlay = document.getElementById('app-loading-overlay');
   try {
@@ -3188,6 +3609,8 @@ async function restoreSession() {
       if (meRes && meRes.status === 'success') {
         currentUser = meRes.data.user;
         initializeDashboard();
+        observeSelects();
+        initializeCustomDropdowns();
         if (loadingOverlay) {
           loadingOverlay.style.opacity = '0';
           setTimeout(() => loadingOverlay.remove(), 300);
@@ -3201,6 +3624,8 @@ async function restoreSession() {
 
   // Show login view if unauthenticated
   loginView.classList.remove('hidden');
+  observeSelects();
+  initializeCustomDropdowns();
   if (loadingOverlay) {
     loadingOverlay.style.opacity = '0';
     setTimeout(() => loadingOverlay.remove(), 300);

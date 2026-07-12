@@ -37,9 +37,10 @@ export default class MaintenancePolicy extends BasePolicy {
    */
   async canUpdate(actor, maintenance, req) {
     const { status } = req.body;
+    const isFinal = ['Closed', 'Completed', 'Cancelled'].includes(maintenance.status);
 
-    if (maintenance.status === 'Completed' && status !== 'Completed') {
-      return this.deny('Completed maintenance logs are immutable', 'MAINTENANCE_LOCKED');
+    if (isFinal && status !== maintenance.status) {
+      return this.deny('Finalized maintenance logs are immutable', 'MAINTENANCE_LOCKED');
     }
 
     return this.allow();
@@ -49,8 +50,9 @@ export default class MaintenancePolicy extends BasePolicy {
    * Active maintenance logs can be deleted, closed ones require admin permission
    */
   async canDelete(actor, maintenance, req) {
-    if (maintenance.status === 'Completed' && !this.isAdmin(actor)) {
-      return this.deny('Only administrators can delete completed maintenance logs', 'MAINTENANCE_LOCKED');
+    const isFinal = ['Closed', 'Completed', 'Cancelled'].includes(maintenance.status);
+    if (isFinal && !this.isAdmin(actor)) {
+      return this.deny('Only administrators can delete finalized maintenance logs', 'MAINTENANCE_LOCKED');
     }
     return this.allow();
   }

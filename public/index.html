@@ -212,9 +212,7 @@
           <li><a href="#" class="nav-link" data-page="finance" id="nav-finance"><i class="fa-solid fa-gas-pump"></i> <span>Fuel & Expenses</span></a></li>
           <li><a href="#" class="nav-link" data-page="maintenance" id="nav-maintenance"><i class="fa-solid fa-screwdriver-wrench"></i> <span>Maintenance</span></a></li>
           <li><a href="#" class="nav-link" data-page="complaints" id="nav-complaints"><i class="fa-solid fa-triangle-exclamation"></i> <span>Complaints</span></a></li>
-          <li><a href="#" class="nav-link" data-page="documents" id="nav-documents"><i class="fa-solid fa-file-invoice"></i> <span>Documents</span></a></li>
           <li><a href="#" class="nav-link" data-page="reports" id="nav-reports"><i class="fa-solid fa-chart-line"></i> <span>Reports</span></a></li>
-          <li><a href="#" class="nav-link" data-page="users" id="nav-users"><i class="fa-solid fa-users"></i> <span>Users</span></a></li>
           <li><a href="#" class="nav-link" data-page="settings" id="nav-settings"><i class="fa-solid fa-sliders"></i> <span>Settings</span></a></li>
         </ul>
       </nav>
@@ -621,37 +619,28 @@
              PAGE: MAINTENANCE
              ========================================== -->
         <section id="page-maintenance" class="page-content hidden">
-          <div class="grid-card glass">
-            <div class="card-header">
-              <h2>SERVICE LOG</h2>
-            </div>
-            <div class="control-row" style="margin-top: 15px; margin-bottom: 15px;">
-              <div class="filters-left">
-                <input type="text" class="input-filter" id="maint-search" placeholder="Search Vehicle...">
-                <select class="input-select" id="maint-filter-status">
-                  <option value="">All Statuses</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Completed">Completed</option>
-                </select>
+          <div class="dashboard-grid">
+            <div class="grid-card glass" style="grid-column: span 2;">
+              <div class="card-header">
+                <h2>Active Workshop Records</h2>
+              </div>
+              <div class="table-container" style="border:none;">
+                <table id="maintenance-table">
+                  <thead>
+                    <tr>
+                      <th>Vehicle Registration</th>
+                      <th>Repair Description</th>
+                      <th>Logged Cost</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="maintenance-list"></tbody>
+                </table>
               </div>
             </div>
-            <div class="table-container" style="border:none;">
-              <table id="maintenance-table">
-                <thead>
-                  <tr>
-                    <th>Vehicle Number</th>
-                    <th>Date of Maintenance</th>
-                    <th>Problem</th>
-                    <th>Type of Repair/Service</th>
-                    <th>Mechanic or Workshop</th>
-                    <th>Cost</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="maintenance-list"></tbody>
-              </table>
-            </div>
+
+
           </div>
         </section>
         <!-- ==========================================
@@ -680,103 +669,84 @@
           </div>
         </section>
 
-        <!-- ==========================================
-             PAGE: DOCUMENTS
-             ========================================== -->
-        <section id="page-documents" class="page-content hidden">
-          <div class="documents-grid">
-            <div class="doc-card glass">
-              <i class="fa-regular fa-file-pdf doc-icon"></i>
-              <h3>Trip_Manifest_5862.pdf</h3>
-              <p>Vehicle: TX-890-GP | Driver: John Doe</p>
-              <button class="btn btn-outline btn-block"><i class="fa-solid fa-download"></i> Download</button>
-            </div>
-            <div class="doc-card glass">
-              <i class="fa-regular fa-file-pdf doc-icon"></i>
-              <h3>Fuel_Invoice_July.pdf</h3>
-              <p>Finance Analyst | Total $1,280</p>
-              <button class="btn btn-outline btn-block"><i class="fa-solid fa-download"></i> Download</button>
-            </div>
-            <div class="doc-card glass">
-              <i class="fa-regular fa-file-word doc-icon"></i>
-              <h3>Maintenance_Spec_Volvo.docx</h3>
-              <p>Fleet Manager | Garage Notes</p>
-              <button class="btn btn-outline btn-block"><i class="fa-solid fa-download"></i> Download</button>
-            </div>
-          </div>
-        </section>
+
 
         <!-- ==========================================
              PAGE: REPORTS
              ========================================== -->
         <section id="page-reports" class="page-content hidden">
-          <!-- Control Row -->
-          <div class="control-row">
-            <div class="filters-left">
-              <h1 style="font-size: 24px; font-weight: 700; color: var(--text-main); font-family: var(--font-family);">Operational Analytics & ROI</h1>
-            </div>
-            <div class="actions-right">
-              <button class="btn btn-primary" id="btn-export-reports-csv"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
-              <button class="btn btn-outline" id="btn-export-reports-pdf"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
+          <div class="control-row" style="margin-bottom: 24px;">
+            <div style="display: flex; gap: 12px;">
+              <button class="btn btn-outline" id="btn-export-csv"><i class="fa-solid fa-file-csv"></i> Export CSV Report</button>
+              <button class="btn btn-primary" id="btn-export-pdf"><i class="fa-solid fa-file-pdf"></i> Export PDF / Print</button>
             </div>
           </div>
 
-          <!-- KPI Summary Grid -->
-          <div class="stats-grid" style="margin-bottom: 24px;">
-            <div class="stat-card glass">
+          <!-- Fleet Averages Summary KPI Cards -->
+          <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 24px;">
+            <div class="stat-card glass hover-lift" style="height: 120px; padding: 18px;">
               <div class="stat-header">
                 <span class="stat-title">Avg Fuel Efficiency</span>
-                <i class="fa-solid fa-gas-pump" style="color: var(--warning);"></i>
+                <i class="fa-solid fa-droplet warning-icon"></i>
               </div>
-              <div class="stat-main">
-                <div class="stat-value" id="rep-avg-fuel-eff">0.00 km/L</div>
+              <div class="stat-main" style="margin-top: 4px;">
+                <span class="stat-value" id="report-avg-fuel-efficiency" style="font-size: 26px;">-</span>
+                <span class="stat-trend green"><i class="fa-solid fa-road"></i> Km/L</span>
               </div>
             </div>
-            <div class="stat-card glass">
+
+            <div class="stat-card glass hover-lift" style="height: 120px; padding: 18px;">
               <div class="stat-header">
                 <span class="stat-title">Fleet Utilization</span>
-                <i class="fa-solid fa-truck-ramp-box" style="color: var(--info);"></i>
+                <i class="fa-solid fa-chart-pie blue-icon"></i>
               </div>
-              <div class="stat-main">
-                <div class="stat-value" id="rep-fleet-util">0.0%</div>
-              </div>
-            </div>
-            <div class="stat-card glass">
-              <div class="stat-header">
-                <span class="stat-title">Total Operational Cost</span>
-                <i class="fa-solid fa-dollar-sign" style="color: var(--danger);"></i>
-              </div>
-              <div class="stat-main">
-                <div class="stat-value" id="rep-total-op-cost">$ 0</div>
+              <div class="stat-main" style="margin-top: 4px;">
+                <span class="stat-value" id="report-fleet-utilization" style="font-size: 26px;">-</span>
+                <span class="stat-trend green"><i class="fa-solid fa-truck"></i> Active</span>
               </div>
             </div>
-            <div class="stat-card glass">
+
+            <div class="stat-card glass hover-lift" style="height: 120px; padding: 18px;">
               <div class="stat-header">
-                <span class="stat-title">Average Vehicle ROI</span>
-                <i class="fa-solid fa-chart-line" style="color: var(--success);"></i>
+                <span class="stat-title font-small">Total Operational Cost</span>
+                <i class="fa-solid fa-dollar-sign red-icon"></i>
               </div>
-              <div class="stat-main">
-                <div class="stat-value" id="rep-avg-roi">0%</div>
+              <div class="stat-main" style="margin-top: 4px;">
+                <span class="stat-value" id="report-total-operational-cost" style="font-size: 24px;">-</span>
+                <span class="stat-trend"><i class="fa-solid fa-receipt"></i> Cumulative</span>
+              </div>
+            </div>
+
+            <div class="stat-card glass hover-lift" style="height: 120px; padding: 18px;">
+              <div class="stat-header">
+                <span class="stat-title">Avg Vehicle ROI</span>
+                <i class="fa-solid fa-percent green-icon"></i>
+              </div>
+              <div class="stat-main" style="margin-top: 4px;">
+                <span class="stat-value" id="report-avg-roi" style="font-size: 26px;">-</span>
+                <span class="stat-trend green"><i class="fa-solid fa-arrow-trend-up"></i> Yield</span>
               </div>
             </div>
           </div>
 
-          <!-- Graphs Grid -->
+          <!-- SVG Visualizations Grid -->
           <div class="dashboard-grid" style="margin-bottom: 24px;">
-            <!-- Chart 1: Cost vs Revenue -->
             <div class="grid-card glass">
               <div class="card-header">
-                <h2>Cost vs. Estimated Revenue by Vehicle</h2>
+                <h2>Fuel Efficiency by Vehicle (Km/L)</h2>
               </div>
-              <div class="chart-mock" id="chart-cost-revenue" style="height: 250px; display: flex; align-items: center; justify-content: center; position: relative;">
-                <!-- Dynamically populated SVG -->
+              <div class="chart-mock" id="report-fuel-efficiency-graph" style="height: 240px; display: flex; align-items: center; justify-content: center; position: relative;">
+                <!-- Dynamically populated SVG Bar Chart -->
               </div>
             </div>
 
             <!-- Chart 2: ROI % -->
             <div class="grid-card glass">
               <div class="card-header">
-                <h2>Vehicle ROI Comparison (%)</h2>
+                <h2>Return on Investment by Vehicle (%)</h2>
+              </div>
+              <div class="chart-mock" id="report-roi-graph" style="height: 240px; display: flex; align-items: center; justify-content: center; position: relative;">
+                <!-- Dynamically populated SVG Bar Chart -->
               </div>
               <div class="chart-mock" id="chart-roi" style="height: 250px; display: flex; align-items: center; justify-content: center; position: relative;">
                 <!-- Dynamically populated SVG -->
@@ -807,6 +777,33 @@
               </table>
             </div>
           </div>
+
+          <!-- Interactive Analytics Table -->
+          <div class="table-container glass" style="margin-top: 24px;">
+            <div class="card-header" style="border-bottom: none; margin-bottom: 10px;">
+              <h2 style="font-size: 15px;"><i class="fa-solid fa-table"></i> Vehicle Analytics breakdown</h2>
+            </div>
+            <table id="reports-table">
+              <thead>
+                <tr>
+                  <th>Vehicle</th>
+                  <th>Distance (Km)</th>
+                  <th>Fuel (L)</th>
+                  <th>Fuel Cost</th>
+                  <th>Maint Cost</th>
+                  <th>Other Expenses</th>
+                  <th>Fuel Efficiency</th>
+                  <th>Operational Cost</th>
+                  <th>Estimated Revenue</th>
+                  <th>Net Profit</th>
+                  <th>ROI (%)</th>
+                </tr>
+              </thead>
+              <tbody id="report-table-tbody">
+                <tr><td colspan="11" class="empty-message">Loading report analytics...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </section>
 
         <!-- ==========================================
@@ -830,26 +827,7 @@
           </div>
         </section>
 
-        <!-- ==========================================
-             PAGE: USERS
-             ========================================== -->
-        <section id="page-users" class="page-content hidden">
-          <div class="table-container glass">
-            <table id="users-table">
-              <thead>
-                <tr>
-                  <th>User Avatar</th>
-                  <th>Full Name</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Account Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="users-list"></tbody>
-            </table>
-          </div>
-        </section>
+
 
         <!-- ==========================================
              PAGE: ROLES

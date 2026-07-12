@@ -135,8 +135,9 @@ router.patch(
       const updatedLog = await executeWithTransaction(async (session) => {
         const options = session ? { session } : {};
 
-        // If closing maintenance, restore vehicle to Available
-        if (status === 'Completed' && oldLog.status === 'In Progress') {
+        // If closing/completing/cancelling maintenance, restore vehicle to Available
+        const isClosingStatus = ['Closed', 'Completed', 'Cancelled'].includes(status);
+        if (isClosingStatus && oldLog.status === 'Active') {
           // Set vehicle status to Available, unless the vehicle was retired in the meantime
           const vehicle = await Vehicle.findById(oldLog.vehicle);
           if (vehicle && vehicle.status === 'In Shop') {

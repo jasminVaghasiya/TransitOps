@@ -34,12 +34,8 @@ const maintenanceSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['In Progress', 'Completed'],
-      default: 'In Progress',
-    },
-    description: {
-      type: String,
-      trim: true,
+      enum: ['Active', 'Closed', 'Completed', 'Cancelled'],
+      default: 'Active',
     },
     startDate: {
       type: Date,

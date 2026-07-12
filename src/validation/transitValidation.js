@@ -54,8 +54,7 @@ export const maintenanceSchema = Joi.object({
   repairType: Joi.string().trim().required(),
   workshop: Joi.string().trim().required(),
   cost: Joi.number().min(0).required(),
-  status: Joi.string().valid('In Progress', 'Completed').default('In Progress'),
-  description: Joi.string().trim().optional().allow(''),
+  status: Joi.string().valid('Active', 'Closed', 'Completed', 'Cancelled').default('Active'),
 });
 
 export const fuelLogSchema = Joi.object({
@@ -132,8 +131,7 @@ export const updateMaintenanceSchema = Joi.object({
   repairType: Joi.string().trim().optional(),
   workshop: Joi.string().trim().optional(),
   cost: Joi.number().min(0).optional(),
-  status: Joi.string().valid('In Progress', 'Completed').optional(),
-  description: Joi.string().trim().optional().allow(''),
+  status: Joi.string().valid('Active', 'Closed', 'Completed', 'Cancelled').optional(),
 });
 
 export const updateExpenseSchema = Joi.object({
