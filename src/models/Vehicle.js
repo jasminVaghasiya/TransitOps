@@ -26,8 +26,27 @@ const vehicleSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['Available', 'On Trip', 'In Shop', 'Retired'],
+      enum: ['Available', 'On Trip', 'In Shop', 'Retired', 'Sold'],
       default: 'Available',
+    },
+    purchasePrice: {
+      type: Number,
+      min: [0, 'Purchase price cannot be negative'],
+    },
+    purchaseDate: {
+      type: Date,
+      default: Date.now,
+    },
+    sellingPrice: {
+      type: Number,
+      min: [0, 'Selling price cannot be negative'],
+    },
+    saleDate: {
+      type: Date,
+    },
+    photoUrl: {
+      type: String,
+      trim: true,
     },
     isDeleted: {
       type: Boolean,

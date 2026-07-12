@@ -7,6 +7,15 @@ let currentUser = null;
 let currentActivePage = 'dashboard';
 let refreshInterval = null;
 
+const DEFAULT_VEHICLE_PHOTO = 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=400&q=80';
+
+const toBase64 = file => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = () => resolve(reader.result);
+  reader.onerror = error => reject(error);
+});
+
 // ==========================================
 // CLIENT AUTHORIZATION RULES (RBAC)
 // ==========================================
@@ -20,6 +29,7 @@ const ROLE_ABILITIES = {
     update: ['Vehicle', 'Maintenance'],
     delete: ['Vehicle', 'Maintenance'],
     retire: ['Vehicle'],
+    sell: ['Vehicle'],
     assign: ['Vehicle'],
     close: ['Maintenance'],
     export: ['Report'],
@@ -200,6 +210,8 @@ loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = loginEmailInput.value;
   const password = loginPasswordInput.value;
+  const errorBox = document.getElementById('login-error-box');
+  if (errorBox) errorBox.classList.add('hidden');
 
   try {
     const response = await fetchAPI('/api/auth/login', {
@@ -214,14 +226,24 @@ loginForm.addEventListener('submit', async (e) => {
       showToast(`Logged in successfully. Welcome back, ${currentUser.name}!`, 'success');
       initializeDashboard();
     }
-  } catch (error) {}
+  } catch (error) {
+    if (errorBox) {
+      errorBox.classList.remove('hidden');
+      const errorMsg = document.getElementById('login-error-message');
+      if (errorMsg) errorMsg.textContent = error.message || 'Invalid credentials.';
+    }
+  }
 });
 
 // Demo Buttons quick credentials loader
-document.querySelectorAll('.demo-btn').forEach(btn => {
+document.querySelectorAll('.role-item').forEach(btn => {
   btn.addEventListener('click', () => {
     loginEmailInput.value = btn.dataset.email;
     loginPasswordInput.value = 'password123Secure!';
+    const roleSelect = document.getElementById('login-role');
+    if (roleSelect && btn.dataset.role) {
+      roleSelect.value = btn.dataset.role;
+    }
     loginForm.dispatchEvent(new Event('submit'));
   });
 });
@@ -253,6 +275,15 @@ function initializeDashboard() {
 
   // Load default dashboard
   loadPage('dashboard');
+
+  // Bind dashboard filters change events
+  const typeFilter = document.getElementById('dash-filter-type');
+  const regionFilter = document.getElementById('dash-filter-region');
+  const statusFilter = document.getElementById('dash-filter-status');
+
+  if (typeFilter) typeFilter.addEventListener('change', loadDashboardStats);
+  if (regionFilter) regionFilter.addEventListener('change', loadDashboardStats);
+  if (statusFilter) statusFilter.addEventListener('change', loadDashboardStats);
 
   // Silent refresh checker (every 10 minutes)
   if (refreshInterval) clearInterval(refreshInterval);
@@ -382,15 +413,41 @@ function loadPage(page) {
 
 async function loadDashboardStats() {
   try {
-    const veh = await fetchAPI('/api/vehicles');
-    const drv = await fetchAPI('/api/drivers');
-    const trp = await fetchAPI('/api/trips');
+    const vehicleType = document.getElementById('dash-filter-type')?.value || '';
+    const region = document.getElementById('dash-filter-region')?.value || '';
+    const status = document.getElementById('dash-filter-status')?.value || '';
 
-    document.getElementById('dash-total-vehicles').textContent = veh.data.pagination.total;
-    document.getElementById('dash-avail-vehicles').textContent = veh.data.vehicles.filter(v => v.status === 'Available').length;
-    document.getElementById('dash-total-drivers').textContent = drv.data.pagination.total;
-    document.getElementById('dash-total-trips').textContent = trp.data.pagination.total;
-  } catch (err) {}
+    // Construct query parameters
+    const params = new URLSearchParams();
+    if (vehicleType) params.append('vehicleType', vehicleType);
+    if (region) params.append('region', region);
+    if (status) params.append('status', status);
+
+    const res = await fetchAPI(`/api/dashboard/stats?${params.toString()}`);
+    if (res && res.status === 'success') {
+      const kpis = res.data.kpis;
+      
+      const activeVehiclesEl = document.getElementById('dash-active-vehicles');
+      const availVehiclesEl = document.getElementById('dash-avail-vehicles');
+      const maintVehiclesEl = document.getElementById('dash-maint-vehicles');
+      const activeTripsEl = document.getElementById('dash-active-trips');
+      const pendingTripsEl = document.getElementById('dash-pending-trips');
+      const driversDutyEl = document.getElementById('dash-drivers-duty');
+      const utilizationEl = document.getElementById('dash-utilization');
+      const fuelCostsEl = document.getElementById('dash-fuel-costs');
+
+      if (activeVehiclesEl) activeVehiclesEl.textContent = kpis.activeVehicles;
+      if (availVehiclesEl) availVehiclesEl.textContent = kpis.availableVehicles;
+      if (maintVehiclesEl) maintVehiclesEl.textContent = kpis.maintenanceVehicles;
+      if (activeTripsEl) activeTripsEl.textContent = kpis.activeTrips;
+      if (pendingTripsEl) pendingTripsEl.textContent = kpis.pendingTrips;
+      if (driversDutyEl) driversDutyEl.textContent = kpis.driversOnDuty;
+      if (utilizationEl) utilizationEl.textContent = `${kpis.fleetUtilization}%`;
+      if (fuelCostsEl) fuelCostsEl.textContent = `$${kpis.totalFuelCost.toLocaleString()}`;
+    }
+  } catch (err) {
+    console.error('Failed to load dashboard statistics:', err);
+  }
 }
 
 async function loadVehicles() {
@@ -398,15 +455,26 @@ async function loadVehicles() {
   container.innerHTML = '<tr><td colspan="7" class="empty-message">Loading Fleet registry...</td></tr>';
 
   try {
-    const res = await fetchAPI('/api/vehicles');
+    const searchVal = document.getElementById('vehicles-search')?.value || '';
+    const statusVal = document.getElementById('vehicles-filter-status')?.value || '';
+    
+    let url = '/api/vehicles?limit=100';
+    if (searchVal) {
+      url += `&search=${encodeURIComponent(searchVal)}`;
+    }
+    if (statusVal) {
+      url += `&status=${encodeURIComponent(statusVal)}`;
+    }
+
+    const res = await fetchAPI(url);
     container.innerHTML = '';
 
     if (res.data.vehicles.length === 0) {
-      container.innerHTML = '<tr><td colspan="7" class="empty-message">No vehicles recorded.</td></tr>';
+      container.innerHTML = '<tr><td colspan="7" class="empty-message">No matching vehicles recorded.</td></tr>';
       return;
     }
 
-    const hasActions = can('update', 'Vehicle') || can('retire', 'Vehicle');
+    const hasActions = can('update', 'Vehicle') || can('retire', 'Vehicle') || can('sell', 'Vehicle');
     const actionsHeader = document.querySelector('#vehicles-table th:last-child');
     if (actionsHeader) {
       if (hasActions) actionsHeader.classList.remove('hidden');
@@ -416,32 +484,53 @@ async function loadVehicles() {
     res.data.vehicles.forEach(vehicle => {
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td><strong>${vehicle.registrationNumber}</strong></td>
+        <td>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:40px; height:40px; border-radius:4px; overflow:hidden; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.05); border:1px solid var(--border-color); flex-shrink:0;">
+              <img src="${vehicle.photoUrl || DEFAULT_VEHICLE_PHOTO}" style="width:100%; height:100%; object-fit:cover;">
+            </div>
+            <a href="#" class="vehicle-history-link" data-id="${vehicle._id}" style="color:var(--accent); font-weight:700; text-decoration:none;">${vehicle.registrationNumber}</a>
+          </div>
+        </td>
         <td>${vehicle.make} ${vehicle.modelName}</td>
         <td>${vehicle.capacityKg.toLocaleString()} Kg</td>
-        <td>Active (12 Months)</td>
+        <td>
+          Bought: ${vehicle.purchasePrice ? `$${vehicle.purchasePrice.toLocaleString()}` : '—'}
+          ${vehicle.status === 'Sold' ? `<br><span style="color:var(--danger)">Sold: $${vehicle.sellingPrice ? vehicle.sellingPrice.toLocaleString() : '—'}</span>` : ''}
+        </td>
         <td>—</td>
         <td><span class="badge status-${vehicle.status.replace(' ', '-')}">${vehicle.status}</span></td>
         ${hasActions ? `
         <td>
-          ${can('update', 'Vehicle') ? `<button class="btn btn-outline edit-vehicle-btn" data-id="${vehicle._id}" style="padding:4px 8px; font-size:11px;">Edit</button>` : ''}
-          ${can('retire', 'Vehicle') && vehicle.status !== 'Retired' ? `<button class="btn btn-logout retire-vehicle-btn" data-id="${vehicle._id}" style="padding:4px 8px; font-size:11px; margin-left:4px;">Retire</button>` : ''}
+          ${vehicle.status === 'Sold' ? '—' : `
+            ${vehicle.status === 'Retired' ? `
+              ${can('sell', 'Vehicle') ? `<button class="btn btn-primary sell-vehicle-btn" data-id="${vehicle._id}" style="padding:4px 8px; font-size:11px; background:#10B981; border-color:#10B981;">Sell</button>` : '—'}
+            ` : `
+              ${can('update', 'Vehicle') ? `<button class="btn btn-outline edit-vehicle-btn" data-id="${vehicle._id}" style="padding:4px 8px; font-size:11px;">Edit</button>` : ''}
+            `}
+          `}
         </td>
         ` : ''}
       `;
       container.appendChild(row);
     });
 
-    document.querySelectorAll('.retire-vehicle-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        if (confirm('Retire this vehicle?')) {
-          await fetchAPI(`/api/vehicles/${btn.dataset.id}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ status: 'Retired' })
-          });
-          showToast('Vehicle retired.');
-          loadVehicles();
-        }
+    document.querySelectorAll('.sell-vehicle-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        renderSellVehicleForm(btn.dataset.id);
+      });
+    });
+
+    document.querySelectorAll('.edit-vehicle-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        renderEditVehicleForm(btn.dataset.id);
+      });
+    });
+
+    document.querySelectorAll('.vehicle-history-link').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.location.href = `vehicle-history.html?id=${link.dataset.id}`;
       });
     });
   } catch (err) {}
@@ -944,72 +1033,140 @@ async function loadTrips() {
       container.appendChild(card);
     });
 
-    // Wire actions
-    document.querySelectorAll('.dispatch-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        await fetchAPI(`/api/trips/${btn.dataset.id}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ status: 'Dispatched' })
-        });
-        showToast('Trip Dispatched! Assets locked.');
-        loadTrips();
-      });
-    });
-
-    document.querySelectorAll('.complete-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        await fetchAPI(`/api/trips/${btn.dataset.id}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ status: 'Completed' })
-        });
-        showToast('Trip Completed successfully!');
-        loadTrips();
-      });
-    });
-
-    document.querySelectorAll('.cancel-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        if (confirm('Cancel this trip?')) {
-          await fetchAPI(`/api/trips/${btn.dataset.id}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ status: 'Cancelled' })
-          });
-          showToast('Trip Cancelled.');
-          loadTrips();
-        }
-      });
-    });
-
-    // Simulated Tracking Map modal popups
-    document.querySelectorAll('.track-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        modalContainer.classList.remove('hidden');
-        modalTitle.textContent = 'Live Trip Tracking Status';
-        modalBody.innerHTML = `
-          <div style="text-align:center; padding:10px;">
-            <div class="map-mock" style="height:250px; background:#1A2235; border:1px solid var(--border-color); border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; margin-bottom:20px; position:relative;">
-              <span style="font-size:36px; z-index:2;">📍</span>
-              <div style="position:absolute; width:100%; height:100%; opacity:0.1; background:radial-gradient(circle, var(--accent) 10%, transparent 60%);"></div>
-              <p style="color:var(--text-secondary); font-size:12px; z-index:2; position:absolute; bottom:15px;">Simulated live GPS data streams populated...</p>
-            </div>
-            <h3>Timeline Progress Logs</h3>
-            <div class="timeline-tracker" style="margin-top:20px;">
-              <div class="timeline-node done"><div class="node-dot"><i class="fa-solid fa-check"></i></div><span class="node-label">Hub Departure</span></div>
-              <div class="timeline-node done"><div class="node-dot"><i class="fa-solid fa-check"></i></div><span class="node-label">Checkpoint Alpha</span></div>
-              <div class="timeline-node active"><div class="node-dot">📍</div><span class="node-label">Transit</span></div>
-              <div class="timeline-node"><div class="node-dot">4</div><span class="node-label">Destination</span></div>
-            </div>
-          </div>
-        `;
-      });
-    });
-
   } catch (err) {}
 }
 
 async function loadFinance() {
   loadExpenses();
   loadFuelLogs();
+}
+
+async function loadCostSummary() {
+  const container = document.getElementById('cost-summary-container');
+  if (!container) return;
+  container.innerHTML = '<div class="empty-message">Computing operational costs...</div>';
+
+  try {
+    // Fetch all fuel logs and expenses (high limit to get all records)
+    const [fuelRes, expRes] = await Promise.all([
+      fetchAPI('/api/expenses/fuel?limit=1000'),
+      fetchAPI('/api/expenses?limit=1000'),
+    ]);
+
+    const fuelLogs = fuelRes?.data?.fuelLogs || [];
+    const expenses = expRes?.data?.expenses || [];
+
+    // Aggregate per vehicle
+    const vehicleMap = {};
+
+    fuelLogs.forEach(f => {
+      const id  = f.vehicle?._id || f.vehicle;
+      const reg = f.vehicle?.registrationNumber || id;
+      const make = `${f.vehicle?.make || ''} ${f.vehicle?.modelName || ''}`.trim();
+      if (!vehicleMap[id]) vehicleMap[id] = { reg, make, fuelCost: 0, fuelLiters: 0, expenseCost: 0, expenseCount: 0 };
+      vehicleMap[id].fuelCost   += f.cost || 0;
+      vehicleMap[id].fuelLiters += f.fuelLiters || 0;
+    });
+
+    expenses.forEach(e => {
+      const id  = e.vehicle?._id || e.vehicle;
+      const reg = e.vehicle?.registrationNumber || id;
+      const make = `${e.vehicle?.make || ''} ${e.vehicle?.modelName || ''}`.trim();
+      if (!vehicleMap[id]) vehicleMap[id] = { reg, make, fuelCost: 0, fuelLiters: 0, expenseCost: 0, expenseCount: 0 };
+      vehicleMap[id].expenseCost  += e.amount || 0;
+      vehicleMap[id].expenseCount += 1;
+    });
+
+    const vehicles = Object.values(vehicleMap);
+
+    if (vehicles.length === 0) {
+      container.innerHTML = '<div class="empty-message">No cost data available yet. Add fuel logs or expenses first.</div>';
+      return;
+    }
+
+    container.innerHTML = '';
+
+    // Grand totals row
+    const grandFuel    = vehicles.reduce((s, v) => s + v.fuelCost, 0);
+    const grandExpense = vehicles.reduce((s, v) => s + v.expenseCost, 0);
+    const grandTotal   = grandFuel + grandExpense;
+
+    const summaryBanner = document.createElement('div');
+    summaryBanner.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:8px;';
+    summaryBanner.innerHTML = `
+      <div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:20px;text-align:center;">
+        <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;"><i class="fa-solid fa-gas-pump"></i> Total Fuel Cost</div>
+        <div style="font-size:26px;font-weight:800;color:var(--warning);">$ ${grandFuel.toLocaleString()}</div>
+      </div>
+      <div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:20px;text-align:center;">
+        <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;"><i class="fa-solid fa-receipt"></i> Total Other Expenses</div>
+        <div style="font-size:26px;font-weight:800;color:var(--accent-hover);">$ ${grandExpense.toLocaleString()}</div>
+      </div>
+      <div style="background:linear-gradient(135deg,var(--accent),#4f1ea8);border:1px solid var(--accent);border-radius:var(--radius-md);padding:20px;text-align:center;box-shadow:var(--shadow-glow);">
+        <div style="font-size:11px;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;"><i class="fa-solid fa-coins"></i> Grand Operational Total</div>
+        <div style="font-size:26px;font-weight:800;color:#fff;">$ ${grandTotal.toLocaleString()}</div>
+      </div>
+    `;
+    container.appendChild(summaryBanner);
+
+    // Per-vehicle breakdown heading
+    const heading = document.createElement('h3');
+    heading.style.cssText = 'font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin:12px 0 8px;';
+    heading.innerHTML = '<i class="fa-solid fa-truck"></i>&nbsp; Per-Vehicle Breakdown';
+    container.appendChild(heading);
+
+    // Per-vehicle cards
+    vehicles.forEach(v => {
+      const total = v.fuelCost + v.expenseCost;
+      const fuelPct = total > 0 ? Math.round((v.fuelCost / total) * 100) : 0;
+      const expPct  = 100 - fuelPct;
+
+      const card = document.createElement('div');
+      card.style.cssText = 'background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:20px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;';
+      card.innerHTML = `
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <span style="font-size:18px;">🚛</span>
+            <div>
+              <div style="font-size:15px;font-weight:700;color:var(--text-main);">${v.reg}</div>
+              <div style="font-size:12px;color:var(--text-secondary);">${v.make}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:24px;flex-wrap:wrap;">
+            <div>
+              <div style="font-size:11px;color:var(--text-secondary);"><i class="fa-solid fa-gas-pump"></i> Fuel Cost</div>
+              <div style="font-size:16px;font-weight:700;color:var(--warning);">$ ${v.fuelCost.toLocaleString()}</div>
+              <div style="font-size:10px;color:var(--text-secondary);">${v.fuelLiters.toLocaleString()} Liters</div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text-secondary);"><i class="fa-solid fa-receipt"></i> Expenses</div>
+              <div style="font-size:16px;font-weight:700;color:var(--accent-hover);">$ ${v.expenseCost.toLocaleString()}</div>
+              <div style="font-size:10px;color:var(--text-secondary);">${v.expenseCount} record${v.expenseCount !== 1 ? 's' : ''}</div>
+            </div>
+          </div>
+          <!-- Cost bar -->
+          <div style="margin-top:14px;background:var(--bg-card);border-radius:99px;height:8px;overflow:hidden;">
+            <div style="display:flex;height:100%;">
+              <div style="width:${fuelPct}%;background:var(--warning);border-radius:99px 0 0 99px;"></div>
+              <div style="width:${expPct}%;background:var(--accent);border-radius:0 99px 99px 0;"></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;margin-top:4px;font-size:10px;color:var(--text-secondary);">
+            <span><span style="color:var(--warning);">&#9632;</span> Fuel ${fuelPct}%</span>
+            <span><span style="color:var(--accent);">&#9632;</span> Other ${expPct}%</span>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Total Cost</div>
+          <div style="font-size:28px;font-weight:800;color:var(--success);">$${total.toLocaleString()}</div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+
+  } catch (err) {
+    container.innerHTML = '<div class="empty-message" style="color:var(--danger);">Failed to load cost data.</div>';
+  }
 }
 
 async function loadExpenses() {
@@ -1200,9 +1357,15 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.add('active');
 
     const tab = btn.dataset.tab;
-    document.getElementById('tab-content-expenses').classList.add('hidden');
-    document.getElementById('tab-content-fuel').classList.add('hidden');
-    document.getElementById(`tab-content-${tab}`).classList.remove('hidden');
+    ['expenses', 'fuel', 'cost-summary'].forEach(t => {
+      const el = document.getElementById(`tab-content-${t}`);
+      if (el) el.classList.add('hidden');
+    });
+    const target = document.getElementById(`tab-content-${tab}`);
+    if (target) target.classList.remove('hidden');
+
+    // Load cost summary on demand
+    if (tab === 'cost-summary') loadCostSummary();
   });
 });
 
@@ -1232,11 +1395,12 @@ profileSignout.addEventListener('click', handleLogout);
 // ==========================================
 modalClose.addEventListener('click', () => {
   modalContainer.classList.add('hidden');
+  document.querySelector('.modal-card')?.classList.remove('modal-large');
 });
 
 floatingActionBtn.addEventListener('click', () => {
   modalContainer.classList.remove('hidden');
-  modalTitle.textContent = `Register New ${currentActivePage.charAt(0).toUpperCase() + currentActivePage.slice(1, -1)}`;
+  modalTitle.textContent = currentActivePage === 'vehicles' ? 'Buy New Vehicle' : `Register New ${currentActivePage.charAt(0).toUpperCase() + currentActivePage.slice(1, -1)}`;
 
   if (currentActivePage === 'vehicles') {
     renderVehicleForm();
@@ -1270,13 +1434,60 @@ function renderVehicleForm() {
         <input type="number" id="veh-cap" required placeholder=" ">
         <label for="veh-cap"><i class="fa-solid fa-weight-hanging"></i> Capacity (Kg)</label>
       </div>
-      <button type="submit" class="btn btn-primary btn-block">Add Vehicle</button>
+      <div class="input-group">
+        <input type="number" id="veh-purchase-price" required placeholder=" ">
+        <label for="veh-purchase-price"><i class="fa-solid fa-dollar-sign"></i> Purchase Price</label>
+      </div>
+      <div class="input-group">
+        <input type="date" id="veh-purchase-date" required placeholder=" ">
+        <label for="veh-purchase-date"><i class="fa-solid fa-calendar-days"></i> Purchase Date</label>
+      </div>
+      <div class="input-group" style="margin-bottom: 24px;">
+        <input type="file" id="veh-photo-file" accept="image/*" style="padding: 10px 0;">
+        <label for="veh-photo-file" style="position: static; transform: none; font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 6px;">
+          <i class="fa-solid fa-image"></i> Vehicle Photo File (Optional)
+        </label>
+        <div id="create-photo-preview" style="margin-top: 10px; width: 80px; height: 80px; border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.03);">
+          <img src="${DEFAULT_VEHICLE_PHOTO}" style="width: 100%; height: 100%; object-fit: cover;" id="create-preview-img">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Buy & Add Vehicle</button>
     </form>
   `;
+
+  document.getElementById('veh-purchase-date').valueAsDate = new Date();
+
+  const fileInput = document.getElementById('veh-photo-file');
+  const previewImg = document.getElementById('create-preview-img');
+  
+  fileInput.addEventListener('change', async () => {
+    if (fileInput.files.length > 0) {
+      const file = fileInput.files[0];
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Image size cannot exceed 5MB.', 'error');
+        fileInput.value = '';
+        previewImg.src = DEFAULT_VEHICLE_PHOTO;
+        return;
+      }
+      try {
+        const base64 = await toBase64(file);
+        previewImg.src = base64;
+      } catch (err) {
+        console.error(err);
+      }
+    } else {
+      previewImg.src = DEFAULT_VEHICLE_PHOTO;
+    }
+  });
 
   document.getElementById('create-vehicle-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
+      let photoUrl = DEFAULT_VEHICLE_PHOTO;
+      if (fileInput.files.length > 0) {
+        photoUrl = await toBase64(fileInput.files[0]);
+      }
+
       await fetchAPI('/api/vehicles', {
         method: 'POST',
         body: JSON.stringify({
@@ -1284,13 +1495,117 @@ function renderVehicleForm() {
           make: document.getElementById('veh-make').value,
           modelName: document.getElementById('veh-model').value,
           capacityKg: parseFloat(document.getElementById('veh-cap').value),
+          purchasePrice: parseFloat(document.getElementById('veh-purchase-price').value),
+          purchaseDate: document.getElementById('veh-purchase-date').value,
+          photoUrl: photoUrl,
         }),
       });
-      showToast('Vehicle created successfully!');
+      showToast('Vehicle purchased and registered successfully!');
       modalContainer.classList.add('hidden');
       loadVehicles();
     } catch (err) {}
   });
+}
+
+async function renderEditVehicleForm(vehicleId) {
+  modalContainer.classList.remove('hidden');
+  modalTitle.textContent = 'Edit Vehicle Details';
+  modalBody.innerHTML = '<div class="empty-message">Loading vehicle details...</div>';
+
+  try {
+    const res = await fetchAPI(`/api/vehicles/${vehicleId}`);
+    const vehicle = res.data.vehicle;
+
+    modalBody.innerHTML = `
+      <form id="edit-vehicle-form">
+        <div class="input-group">
+          <input type="text" id="edit-veh-reg" required value="${vehicle.registrationNumber || ''}" placeholder=" ">
+          <label for="edit-veh-reg"><i class="fa-solid fa-hashtag"></i> Registration Number</label>
+        </div>
+        <div class="input-group">
+          <input type="text" id="edit-veh-make" required value="${vehicle.make || ''}" placeholder=" ">
+          <label for="edit-veh-make"><i class="fa-solid fa-truck"></i> Make</label>
+        </div>
+        <div class="input-group">
+          <input type="text" id="edit-veh-model" required value="${vehicle.modelName || ''}" placeholder=" ">
+          <label for="edit-veh-model"><i class="fa-solid fa-cube"></i> Model Name</label>
+        </div>
+        <div class="input-group">
+          <input type="number" id="edit-veh-cap" required value="${vehicle.capacityKg || ''}" placeholder=" ">
+          <label for="edit-veh-cap"><i class="fa-solid fa-weight-hanging"></i> Capacity (Kg)</label>
+        </div>
+        <div class="input-group">
+          <input type="number" id="edit-veh-purchase-price" value="${vehicle.purchasePrice || ''}" placeholder=" ">
+          <label for="edit-veh-purchase-price"><i class="fa-solid fa-dollar-sign"></i> Purchase Price</label>
+        </div>
+        <div class="input-group">
+          <input type="date" id="edit-veh-purchase-date" value="${vehicle.purchaseDate ? vehicle.purchaseDate.substring(0, 10) : ''}" placeholder=" ">
+          <label for="edit-veh-purchase-date"><i class="fa-solid fa-calendar-days"></i> Purchase Date</label>
+        </div>
+        <div class="input-group" style="margin-bottom: 24px;">
+          <input type="file" id="edit-veh-photo-file" accept="image/*" style="padding: 10px 0;">
+          <label for="edit-veh-photo-file" style="position: static; transform: none; font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 6px;">
+            <i class="fa-solid fa-image"></i> Vehicle Photo File (Optional)
+          </label>
+          <div id="edit-photo-preview" style="margin-top: 10px; width: 80px; height: 80px; border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.03);">
+            <img src="${vehicle.photoUrl || DEFAULT_VEHICLE_PHOTO}" style="width: 100%; height: 100%; object-fit: cover;" id="edit-preview-img">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Save Changes</button>
+      </form>
+    `;
+
+    const fileInput = document.getElementById('edit-veh-photo-file');
+    const previewImg = document.getElementById('edit-preview-img');
+    
+    fileInput.addEventListener('change', async () => {
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        if (file.size > 5 * 1024 * 1024) {
+          showToast('Image size cannot exceed 5MB.', 'error');
+          fileInput.value = '';
+          previewImg.src = vehicle.photoUrl || DEFAULT_VEHICLE_PHOTO;
+          return;
+        }
+        try {
+          const base64 = await toBase64(file);
+          previewImg.src = base64;
+        } catch (err) {
+          console.error(err);
+        }
+      } else {
+        previewImg.src = vehicle.photoUrl || DEFAULT_VEHICLE_PHOTO;
+      }
+    });
+
+    document.getElementById('edit-vehicle-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        let photoUrl = vehicle.photoUrl || DEFAULT_VEHICLE_PHOTO;
+        if (fileInput.files.length > 0) {
+          photoUrl = await toBase64(fileInput.files[0]);
+        }
+
+        await fetchAPI(`/api/vehicles/${vehicleId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            registrationNumber: document.getElementById('edit-veh-reg').value,
+            make: document.getElementById('edit-veh-make').value,
+            modelName: document.getElementById('edit-veh-model').value,
+            capacityKg: parseFloat(document.getElementById('edit-veh-cap').value),
+            purchasePrice: parseFloat(document.getElementById('edit-veh-purchase-price').value) || undefined,
+            purchaseDate: document.getElementById('edit-veh-purchase-date').value || undefined,
+            photoUrl: photoUrl,
+          }),
+        });
+        showToast('Vehicle details updated successfully!');
+        modalContainer.classList.add('hidden');
+        loadVehicles();
+      } catch (err) {}
+    });
+  } catch (err) {
+    modalBody.innerHTML = '<div class="empty-message">Failed to load vehicle details.</div>';
+  }
 }
 
 function renderDriverForm() {

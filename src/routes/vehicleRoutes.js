@@ -1,5 +1,8 @@
 import express from 'express';
 import Vehicle from '../models/Vehicle.js';
+import Trip from '../models/Trip.js';
+import FuelLog from '../models/FuelLog.js';
+import Maintenance from '../models/Maintenance.js';
 import { protect } from '../middleware/auth.js';
 import { attachAbility, authorize, policyGate } from '../middleware/rbac.js';
 import { validateBody } from '../middleware/validate.js';
@@ -87,6 +90,35 @@ router.get('/', authorize('read', 'Vehicle'), async (req, res, next) => {
           limit: parseInt(limit, 10),
           pages: Math.ceil(total / limit),
         },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route   GET /api/vehicles/:id/history
+ * @desc    Get vehicle history (trips, fuel logs, maintenance)
+ */
+router.get('/:id/history', authorize('read', 'Vehicle'), async (req, res, next) => {
+  try {
+    const vehicle = await Vehicle.findById(req.params.id);
+    if (!vehicle) {
+      return res.status(404).json({ status: 'fail', message: 'Vehicle not found' });
+    }
+
+    const trips = await Trip.find({ vehicle: req.params.id }).populate('driver');
+    const fuelLogs = await FuelLog.find({ vehicle: req.params.id });
+    const maintenance = await Maintenance.find({ vehicle: req.params.id });
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        vehicle,
+        trips,
+        fuelLogs,
+        maintenance,
       },
     });
   } catch (error) {

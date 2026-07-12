@@ -15,8 +15,8 @@ export default class TripPolicy extends BasePolicy {
       return this.deny('Vehicle not found', 'VEHICLE_NOT_FOUND');
     }
 
-    if (vehicle.status === 'Retired') {
-      return this.deny('Cannot assign a retired vehicle to a new trip', 'VEHICLE_RETIRED');
+    if (vehicle.status !== 'Available') {
+      return this.deny(`Cannot assign a vehicle in '${vehicle.status}' status to a new trip`, 'VEHICLE_UNAVAILABLE');
     }
 
     // Load referenced Driver
@@ -60,7 +60,15 @@ export default class TripPolicy extends BasePolicy {
 
       const vehicle = await Vehicle.findById(vId);
       if (!vehicle) return this.deny('Vehicle not found', 'VEHICLE_NOT_FOUND');
-      if (vehicle.status === 'Retired') return this.deny('Cannot assign a retired vehicle', 'VEHICLE_RETIRED');
+      
+      // If changing to a new vehicle, ensure it is Available
+      if (newVehicleId && String(newVehicleId) !== String(trip.vehicle)) {
+        if (vehicle.status !== 'Available') {
+          return this.deny(`Cannot assign a vehicle in '${vehicle.status}' status`, 'VEHICLE_UNAVAILABLE');
+        }
+      } else {
+        if (vehicle.status === 'Retired') return this.deny('Cannot assign a retired vehicle', 'VEHICLE_RETIRED');
+      }
 
       const driver = await Driver.findById(dId);
       if (!driver) return this.deny('Driver not found', 'DRIVER_NOT_FOUND');
