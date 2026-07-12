@@ -191,7 +191,14 @@ async function runVerification() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${managerToken}`,
       },
-      body: JSON.stringify({ vehicle: vehicleId, description: 'Brake pad swap', cost: 450 }),
+      body: JSON.stringify({
+        vehicle: vehicleId,
+        problem: 'Brake pads worn out',
+        repairType: 'Replacement',
+        workshop: 'City Garage',
+        cost: 450,
+        description: 'Brake pad swap'
+      }),
     });
     if (badMaintRes.status === 403) {
       console.log('✓ Success: Correctly blocked vehicle from entering maintenance while on active trip (403).');
@@ -234,7 +241,14 @@ async function runVerification() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${managerToken}`,
       },
-      body: JSON.stringify({ vehicle: vehicleId, description: 'Engine oil flush & diagnostics', cost: 1200 }),
+      body: JSON.stringify({
+        vehicle: vehicleId,
+        problem: 'Engine oil dirty',
+        repairType: 'Maintenance',
+        workshop: 'Main Station Workshop',
+        cost: 1200,
+        description: 'Engine oil flush & diagnostics'
+      }),
     });
     const maintData = await maintRes.json();
     const maintId = maintData.data.maintenance._id;
@@ -303,12 +317,12 @@ async function runVerification() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${managerToken}`,
       },
-      body: JSON.stringify({ status: 'Closed' }),
+      body: JSON.stringify({ status: 'Completed' }),
     });
     if (closeMaintRes.status !== 200) {
       throw new Error('Closing maintenance failed');
     }
-    console.log('✓ Success: Maintenance record closed.');
+    console.log('✓ Success: Maintenance record completed.');
 
     // Verify vehicle returns to Available
     const outShopVehicle = await Vehicle.findById(vehicleId);
@@ -375,9 +389,41 @@ async function runVerification() {
     }
 
     // ==========================================
-    // TEST 8: UNIFIED AUDIT LOG ENGINE
+    // TEST 8: DASHBOARD FILTERED KPIS
     // ==========================================
-    console.log('\n[TEST 8] Querying unified AuditLog logs...');
+    console.log('\n[TEST 8] Querying Dashboard KPIs with region and vehicleType filters...');
+    const dbStatsRes = await fetch(`${BASE_URL}/dashboard/stats?region=North&vehicleType=Truck`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    const dbStats = await dbStatsRes.json();
+    if (dbStatsRes.status === 200 && dbStats.data.kpis) {
+      console.log('✓ Success: Dashboard KPIs returned successfully with filters.');
+      console.log('Sample Dashboard KPI stats:', dbStats.data.kpis);
+    } else {
+      throw new Error(`Dashboard stats retrieval failed with status ${dbStatsRes.status}`);
+    }
+
+    // ==========================================
+    // TEST 9: TRIP ADVANCED QUERY FILTERS
+    // ==========================================
+    console.log('\n[TEST 9] Querying Trips list with vehicleType, region, source, and destination filters...');
+    const tripFilterRes = await fetch(`${BASE_URL}/trips?vehicleType=Truck&region=North&source=Houston&destination=Dallas`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    const tripFilterData = await tripFilterRes.json();
+    if (tripFilterRes.status === 200 && tripFilterData.data.trips) {
+      console.log('✓ Success: Trips list filtered and returned successfully.');
+      console.log(`Matching trips count: ${tripFilterData.data.trips.length}`);
+    } else {
+      throw new Error(`Trips filtered retrieval failed with status ${tripFilterRes.status}`);
+    }
+
+    // ==========================================
+    // TEST 10: UNIFIED AUDIT LOG ENGINE
+    // ==========================================
+    console.log('\n[TEST 10] Querying unified AuditLog logs...');
     const auditLogs = await AuditLog.find().populate('user');
     if (auditLogs.length > 0) {
       console.log(`✓ Verified: Successfully recorded ${auditLogs.length} audit logs.`);

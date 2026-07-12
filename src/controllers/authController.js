@@ -77,12 +77,12 @@ export const signup = async (req, res, next) => {
     }
 
     // 2. Create the user
-    // Restrict role assignment unless authorized, or let it default to 'user'
+    // Restrict role assignment unless authorized, or let it default to 'read_only'
     const newUser = await User.create({
       name,
       email,
       password,
-      role: role && ['user', 'admin'].includes(role) ? role : 'user',
+      role: role && ['read_only', 'admin'].includes(role) ? role : 'read_only',
     });
 
     // 4. Generate tokens

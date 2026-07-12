@@ -180,8 +180,8 @@ router.delete(
       await executeWithTransaction(async (session) => {
         const options = session ? { session } : {};
 
-        // If deleted log was active, return vehicle to Available
-        if (oldLog.status === 'Active') {
+        // If deleted log was active (In Progress), return vehicle to Available
+        if (oldLog.status === 'In Progress') {
           await Vehicle.findByIdAndUpdate(oldLog.vehicle, { status: 'Available' }, options);
         }
 

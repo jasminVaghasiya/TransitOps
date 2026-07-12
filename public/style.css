@@ -218,6 +218,7 @@ body {
 /* Floating behavior */
 .input-group input:focus ~ label,
 .input-group input:not(:placeholder-shown) ~ label,
+.input-group select ~ label,
 .input-group select:focus ~ label,
 .input-group textarea:focus ~ label {
   top: 0;
@@ -243,76 +244,249 @@ body {
   justify-content: center;
   min-height: 100vh;
   padding: 20px;
-  background: radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.12) 0%, transparent 40%),
-              radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 45%);
+  background: radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.06) 0%, transparent 40%),
+              radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.04) 0%, transparent 45%);
 }
 
-.login-card {
+.login-container {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
   width: 100%;
-  max-width: 480px;
-  padding: 40px;
+  max-width: 960px;
+  min-height: 580px;
   border-radius: var(--radius-lg);
+  overflow: hidden;
   box-shadow: var(--shadow-soft);
-  animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards;
+  animation: slideUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards;
 }
 
-.login-header {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.logo {
+/* Left Panel - Light Grey Info */
+.login-info-panel {
+  background-color: #D2D6DC;
+  color: #1F2937;
+  padding: 48px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 8px;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-.logo-icon {
-  font-size: 32px;
-  color: var(--accent);
-  text-shadow: var(--shadow-glow);
+.login-info-panel h1 {
+  font-size: 24px;
 }
 
-.logo h1, .logo h2 {
-  font-weight: 800;
-  font-size: 26px;
-  letter-spacing: -0.5px;
-}
-
-.logo span {
-  color: var(--accent);
-}
-
-.login-header p {
-  color: var(--text-secondary);
+.login-info-panel .subtitle {
+  color: #4B5563;
   font-size: 13px;
+  margin-top: 4px;
 }
 
-.demo-accounts {
-  margin-top: 25px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border-color);
+.quick-roles-container {
+  margin-top: 40px;
 }
 
-.demo-accounts h3 {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.quick-roles-container h3 {
+  color: #111827;
+  font-size: 14px;
+  font-weight: 700;
   margin-bottom: 12px;
 }
 
-.demo-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+.role-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.demo-btn {
-  padding: 8px;
+.role-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #4B5563;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.role-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #111827;
+  transform: translateX(4px);
+}
+
+.role-bullet {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #B45309;
+}
+
+.login-footer {
   font-size: 11px;
-  text-align: center;
+  font-weight: 600;
+  color: #6B7280;
+  letter-spacing: 0.5px;
+}
+
+/* Right Panel - Dark Form */
+.login-form-panel {
+  background-color: #090B15;
+  color: #F8FAFC;
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.form-header {
+  margin-bottom: 24px;
+}
+
+.form-header h2 {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.form-header p {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+/* Static Input Labels matching mockup */
+.login-form-panel .input-group {
+  display: flex;
+  flex-direction: column-reverse;
+  margin-bottom: 20px;
+}
+
+.login-form-panel .input-group label {
+  position: static;
+  transform: none !important;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  pointer-events: auto;
+  background: none;
+  padding: 0;
+}
+
+.login-form-panel .input-group input,
+.login-form-panel .input-group select {
+  padding: 10px 14px;
+  background: #111827;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-main);
+  transition: var(--transition-fast);
+}
+
+.login-form-panel .input-group input:focus,
+.login-form-panel .input-group select:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  margin-bottom: 20px;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.remember-me input {
+  accent-color: #B45309;
+}
+
+.forgot-pass {
+  color: #3B82F6;
+  text-decoration: none;
+  font-weight: 550;
+}
+.forgot-pass:hover {
+  text-decoration: underline;
+}
+
+.role-scope-info {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.role-scope-info p {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.role-scope-info ul {
+  list-style: none;
+}
+
+.role-scope-info li {
+  margin-bottom: 2px;
+}
+
+/* Dashed Red Error Box */
+.login-error-box {
+  border: 1.5px dashed #EF4444;
+  background: rgba(239, 68, 68, 0.04);
+  color: #EF4444;
+  padding: 14px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  animation: slideUp 0.25s ease-out;
+}
+
+.login-error-box h4 {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #EF4444;
+  margin-bottom: 4px;
+  letter-spacing: 0.5px;
+}
+
+.login-error-box p {
+  font-size: 11.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.login-error-box .desc {
+  font-size: 11px;
+  opacity: 0.85;
+  margin-top: 2px;
+  padding-left: 17px;
+}
+
+/* Mobile responsive login view override */
+@media (max-width: 768px) {
+  .login-container {
+    grid-template-columns: 1fr;
+    max-width: 450px;
+    min-height: auto;
+  }
+  .login-info-panel {
+    display: none;
+  }
 }
 
 /* ==========================================================================
@@ -1172,6 +1346,16 @@ tr:hover {
   animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards;
 }
 
+.modal-card.modal-large {
+  max-width: 920px;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+  100% { transform: translateY(0px); }
+}
+
 .modal-header {
   display: flex;
   align-items: center;
@@ -1343,4 +1527,170 @@ tr:hover {
   .workspace-body {
     padding: 20px;
   }
+}
+
+/* ==========================================================================
+   MOCKUP DRIVERS PAGE SPECIFIC OVERRIDES & TOGGLE STAT
+   ========================================================================== */
+
+#drivers-table tbody tr {
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+#drivers-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+
+#drivers-table tbody tr.selected {
+  background: rgba(124, 58, 237, 0.12) !important;
+  box-shadow: inset 4px 0 0 var(--accent);
+}
+
+.toggle-stat-btn {
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.toggle-stat-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.toggle-stat-btn:active {
+  transform: translateY(0);
+}
+
+.safety-rule-row {
+  margin-top: 10px;
+  padding: 12px 16px;
+  background: rgba(245, 158, 11, 0.05);
+  border: 1px dashed rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-sm);
+  display: inline-block;
+}
+
+.license-expired-badge {
+  color: var(--danger);
+  font-weight: 700;
+  margin-left: 8px;
+  font-size: 10px;
+  text-transform: uppercase;
+  background: var(--danger-glow);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  letter-spacing: 0.5px;
+}
+
+/* Fired and On Leave Badge Custom Styling */
+.status-Fired {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #EF4444 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+.status-On-Leave {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #F59E0B !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+
+/* ==========================================================================
+   MAINTENANCE PAGE TWO-COLUMN LAYOUT
+   ========================================================================== */
+.maintenance-container-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .maintenance-container-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.btn-save-maint {
+  width: 100%;
+  padding: 14px;
+  background-color: #B45309; /* Warm brown/orange from mockup */
+  color: #FFFFFF;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 10px rgba(180, 83, 9, 0.2);
+}
+
+.btn-save-maint:hover {
+  background-color: #D97706;
+  box-shadow: 0 4px 15px rgba(217, 119, 6, 0.4);
+}
+
+.maintenance-flow-guide {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.flow-step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.status-lbl-available {
+  color: var(--success);
+  font-weight: 700;
+}
+
+.status-lbl-in-shop {
+  color: var(--warning);
+  font-weight: 700;
+}
+
+.flow-arrow {
+  color: var(--text-secondary);
+  font-size: 10px;
+  flex-grow: 1;
+  text-align: center;
+  margin: 0 8px;
+  opacity: 0.7;
+}
+
+.flow-note {
+  font-size: 11px;
+  color: var(--warning);
+  margin-top: 16px;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* Badge interactive behavior for In Shop button */
+.badge.status-In-Shop.close-repair-btn {
+  background: var(--warning-glow);
+  color: var(--warning);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  font-size: 10px;
+  outline: none;
+}
+.badge.status-In-Shop.close-repair-btn:hover {
+  background: var(--warning);
+  color: var(--bg-main);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
 }

@@ -80,13 +80,59 @@ router.post(
  */
 router.get('/', authorize('read', 'Trip'), async (req, res, next) => {
   try {
-    const { page = 1, limit = 10, sort = '-createdAt', status, vehicle, driver } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      sort = '-createdAt',
+      status,
+      vehicle,
+      driver,
+      vehicleType,
+      region,
+      source,
+      destination,
+      startDate,
+      endDate,
+    } = req.query;
 
     const query = { isDeleted: { $ne: true } };
 
+    // Direct filters
     if (status) query.status = status;
     if (vehicle) query.vehicle = vehicle;
     if (driver) query.driver = driver;
+
+    // Sub-string case-insensitive search
+    if (source) query.source = { $regex: source, $options: 'i' };
+    if (destination) query.destination = { $regex: destination, $options: 'i' };
+
+    // Date range filters
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+    }
+
+    // Vehicle specific filters (type, region)
+    if (vehicleType || region) {
+      const vehicleQuery = { isDeleted: { $ne: true } };
+      if (vehicleType) vehicleQuery.vehicleType = vehicleType;
+      if (region) vehicleQuery.region = region;
+
+      const matchingVehicles = await Vehicle.find(vehicleQuery);
+      const matchingVehicleIds = matchingVehicles.map(v => v._id);
+      
+      // If we filtered by vehicle type/region but no vehicles match, 
+      // the trips query must return empty (meaning we match an empty list $in: [])
+      if (query.vehicle) {
+        // If query.vehicle is already present, intersect it
+        const originalId = String(query.vehicle);
+        const hasMatch = matchingVehicleIds.some(id => String(id) === originalId);
+        query.vehicle = hasMatch ? originalId : new mongoose.Types.ObjectId();
+      } else {
+        query.vehicle = { $in: matchingVehicleIds };
+      }
+    }
 
     const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
 
