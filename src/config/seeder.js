@@ -1,19 +1,14 @@
 import User from '../models/User.js';
-import Vehicle from '../models/Vehicle.js';
 import Driver from '../models/Driver.js';
-import Trip from '../models/Trip.js';
-import FuelLog from '../models/FuelLog.js';
-import Expense from '../models/Expense.js';
 
 /**
- * Seed initial users if they do not exist
+ * Seed initial users and drivers if they do not exist
  */
 export const seedDatabase = async () => {
   try {
     const userCount = await User.countDocuments();
     if (userCount === 0) {
       console.log('Database empty. Seeding default TransitOps roles...');
-
       const defaultUsers = [
         {
           name: 'System Administrator',
@@ -52,7 +47,6 @@ export const seedDatabase = async () => {
           role: 'read_only',
         },
       ];
-
       // Mongoose hooks automatically hash the passwords during .create()
       await User.create(defaultUsers);
       console.log('Successfully seeded default TransitOps accounts!');
@@ -60,72 +54,56 @@ export const seedDatabase = async () => {
       console.log('Database already has users. Skipping user seeder.');
     }
 
-    // Seed default entities if empty
-    const vehicleCount = await Vehicle.countDocuments();
-    if (vehicleCount === 0) {
-      console.log('Seeding default TransitOps demo vehicles, drivers, and trips...');
-      
-      const defaultVehicle = await Vehicle.create({
-        registrationNumber: 'TX-890-GP',
-        make: 'Volvo',
-        modelName: 'FH16',
-        capacityKg: 20000,
-        status: 'Available',
-        vehicleType: 'Truck',
-        region: 'North',
-      });
-
-      const defaultDriver = await Driver.create({
-        name: 'John Doe',
-        licenseNumber: 'DL-908752-TX',
-        licenseExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-        phone: '+15550199',
-        status: 'Available',
-        safetyScore: 95,
-      });
-
-      // Seed Fuel log
-      await FuelLog.create({
-        vehicle: defaultVehicle._id,
-        date: new Date(),
-        fuelLiters: 100,
-        cost: 350,
-        odometer: 50000,
-      });
-
-      // Seed Expense
-      await Expense.create({
-        expenseType: 'Maintenance',
-        amount: 1200,
-        date: new Date(),
-        vehicle: defaultVehicle._id,
-        description: 'Engine oil flush & diagnostics',
-        status: 'Approved',
-      });
-
-      await Trip.create({
-        vehicle: defaultVehicle._id,
-        driver: defaultDriver._id,
-        source: 'Houston Terminal',
-        destination: 'Dallas Depot',
-        cargoDescription: 'Electronics Freight',
-        cargoWeightKg: 15000,
-        distanceKm: 380,
-        status: 'Draft',
-      });
-
-      await Trip.create({
-        vehicle: defaultVehicle._id,
-        driver: defaultDriver._id,
-        source: 'Austin Hub',
-        destination: 'El Paso Station',
-        cargoDescription: 'Industrial Spares',
-        cargoWeightKg: 12000,
-        distanceKm: 920,
-        status: 'Dispatched',
-      });
-
-      console.log('Seeding of default TransitOps demo dataset complete.');
+    // Seed Drivers if they do not exist
+    const driverCount = await Driver.countDocuments();
+    if (driverCount === 0) {
+      console.log('No drivers found. Seeding default drivers matching the mockup...');
+      const defaultDrivers = [
+        {
+          name: 'Alex',
+          licenseNumber: 'DL-88213',
+          licenseExpiry: new Date('2028-12-31'),
+          licenseCategory: 'LMV',
+          phone: '+1987650000',
+          safetyScore: 96,
+          tripCompletionRate: 96,
+          status: 'Available',
+        },
+        {
+          name: 'John',
+          licenseNumber: 'DL-44120',
+          licenseExpiry: new Date('2025-03-31'),
+          licenseCategory: 'HMV',
+          phone: '+1982200000',
+          safetyScore: 81,
+          tripCompletionRate: 81,
+          status: 'Suspended',
+        },
+        {
+          name: 'Priya',
+          licenseNumber: 'DL-77031',
+          licenseExpiry: new Date('2028-08-31'),
+          licenseCategory: 'LMV',
+          phone: '+1991100000',
+          safetyScore: 99,
+          tripCompletionRate: 99,
+          status: 'On Trip',
+        },
+        {
+          name: 'Suresh',
+          licenseNumber: 'DL-90045',
+          licenseExpiry: new Date('2027-01-31'),
+          licenseCategory: 'HMV',
+          phone: '+1974400000',
+          safetyScore: 88,
+          tripCompletionRate: 88,
+          status: 'Off Duty',
+        },
+      ];
+      await Driver.create(defaultDrivers);
+      console.log('Successfully seeded default mockup drivers!');
+    } else {
+      console.log('Database already has drivers. Skipping driver seeder.');
     }
   } catch (error) {
     console.error(`[SEEDER ERROR] Failed to seed database: ${error.message}`);

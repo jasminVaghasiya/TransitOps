@@ -12,6 +12,20 @@ const router = express.Router();
 router.use(protect);
 router.use(attachAbility);
 
+const autoCheckLeaves = async (req, res, next) => {
+  try {
+    await Driver.updateMany(
+      { status: 'On Leave', leaveUntil: { $lt: new Date() } },
+      { status: 'Available', $unset: { leaveUntil: "" } }
+    );
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+router.use(autoCheckLeaves);
+
 const loadDriver = async (req) => {
   return await Driver.findById(req.params.id);
 };
