@@ -26,18 +26,27 @@ const vehicleSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['Available', 'On Trip', 'In Shop', 'Retired'],
+      enum: ['Available', 'On Trip', 'In Shop', 'Retired', 'Sold'],
       default: 'Available',
     },
-    vehicleType: {
-      type: String,
-      enum: ['Truck', 'Van', 'Trailer', 'Car'],
-      default: 'Truck',
+    purchasePrice: {
+      type: Number,
+      min: [0, 'Purchase price cannot be negative'],
     },
-    region: {
+    purchaseDate: {
+      type: Date,
+      default: Date.now,
+    },
+    sellingPrice: {
+      type: Number,
+      min: [0, 'Selling price cannot be negative'],
+    },
+    saleDate: {
+      type: Date,
+    },
+    photoUrl: {
       type: String,
-      enum: ['North', 'South', 'East', 'West'],
-      default: 'North',
+      trim: true,
     },
     isDeleted: {
       type: Boolean,

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vehicle Lifecycle & Operations History</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Custom Scrollbars */
+    .scroll-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    .scroll-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .scroll-list::-webkit-scrollbar-thumb {
+      background: var(--border-color, rgba(255, 255, 255, 0.08));
+      border-radius: var(--radius-sm, 8px);
+    }
+    .scroll-list::-webkit-scrollbar-thumb:hover {
+      background: var(--text-secondary, #94A3B8);
+    }
+
+    body {
+      padding: 40px 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+      background: var(--bg-main, #0F172A);
+      overflow-y: auto !important;
+      height: auto !important;
+    }
+    .history-header {
+      display: flex;
+      align-items: center;
+      gap: 30px;
+      margin-bottom: 40px;
+      padding: 30px;
+      border-radius: var(--radius-lg, 16px);
+    }
+    .vehicle-photo-container {
+      width: 160px;
+      height: 160px;
+      border-radius: var(--radius-md, 12px);
+      overflow: hidden;
+      border: 2px solid var(--border-color, rgba(255,255,255,0.1));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.03);
+    }
+    .vehicle-photo-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .vehicle-photo-container i {
+      font-size: 64px;
+      color: var(--text-secondary, #64748B);
+    }
+    .header-details {
+      flex: 1;
+    }
+    .header-details h1 {
+      font-size: 32px;
+      font-weight: 800;
+      margin: 0 0 10px 0;
+      letter-spacing: -0.5px;
+    }
+    .header-details .meta-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-right: 20px;
+    }
+    .history-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+    }
+    @media (max-width: 900px) {
+      .history-grid {
+        grid-template-columns: 1fr;
+      }
+      .history-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+      }
+    }
+    .history-card {
+      padding: 25px;
+      border-radius: var(--radius-md, 12px);
+    }
+    .history-card h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.1));
+      padding-bottom: 12px;
+    }
+    .history-card h2 i {
+      color: var(--accent, #7C3AED);
+    }
+    .info-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .info-list li {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px dashed rgba(255,255,255,0.05);
+      font-size: 14px;
+    }
+    .info-list li:last-child {
+      border-bottom: none;
+    }
+    .info-list li span {
+      color: var(--text-secondary);
+    }
+    .info-list li strong {
+      color: var(--text-primary, #F8FAFC);
+    }
+    .scroll-list {
+      max-height: 350px;
+      overflow-y: auto;
+      padding-right: 5px;
+    }
+    .history-item {
+      padding: 15px;
+      border-radius: var(--radius-sm, 8px);
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border-color, rgba(255,255,255,0.05));
+      margin-bottom: 12px;
+    }
+    .history-item:last-child {
+      margin-bottom: 0;
+    }
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .item-body {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <div style="margin-bottom: 24px;">
+    <a href="index.html" style="color: var(--text-secondary); text-decoration: none; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; font-weight: 550; transition: var(--transition-fast);" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--text-secondary)'">
+      <i class="fa-solid fa-arrow-left"></i> Back to Fleet Registry
+    </a>
+  </div>
+
+  <header class="history-header glass">
+    <div class="vehicle-photo-container" id="vehicle-photo">
+      <i class="fa-solid fa-truck-moving"></i>
+    </div>
+    <div class="header-details">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+        <div>
+          <h1 id="vehicle-title">—</h1>
+          <div>
+            <span class="meta-badge"><i class="fa-solid fa-industry"></i> <span id="vehicle-make-model">—</span></span>
+            <span class="meta-badge"><i class="fa-solid fa-weight-hanging"></i> <span id="vehicle-capacity">—</span></span>
+            <span class="meta-badge"><i class="fa-solid fa-circle-info"></i> <span id="vehicle-status" class="badge">—</span></span>
+          </div>
+        </div>
+        <div id="header-actions"></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="history-grid">
+    <!-- Financial Ledger -->
+    <div class="history-card glass">
+      <h2><i class="fa-solid fa-money-bill-transfer"></i> Acquisition & Disposal Info</h2>
+      <ul class="info-list">
+        <li><span>Purchase Price</span><strong id="info-purchase-price">—</strong></li>
+        <li><span>Purchase Date</span><strong id="info-purchase-date">—</strong></li>
+        <li><span>Status</span><strong id="info-status">—</strong></li>
+        <li><span>Selling Price</span><strong id="info-selling-price" style="color:var(--danger, #EF4444);">—</strong></li>
+        <li><span>Sale Date</span><strong id="info-sale-date">—</strong></li>
+      </ul>
+    </div>
+
+    <!-- Maintenance Records -->
+    <div class="history-card glass">
+      <h2><i class="fa-solid fa-screwdriver-wrench"></i> Workshop & Repair History</h2>
+      <div class="scroll-list" id="maintenance-logs">
+        <div class="empty-message">No repair history found.</div>
+      </div>
+    </div>
+
+    <!-- Driver & Route History -->
+    <div class="history-card glass">
+      <h2><i class="fa-solid fa-route"></i> Trips & Driver History</h2>
+      <div class="scroll-list" id="trips-logs">
+        <div class="empty-message">No dispatch records found.</div>
+      </div>
+    </div>
+
+    <!-- Fuel Logs -->
+    <div class="history-card glass">
+      <h2><i class="fa-solid fa-gas-pump"></i> Fuel Log Expenses</h2>
+      <div class="scroll-list" id="fuel-logs">
+        <div class="empty-message">No fuel records found.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DYNAMIC DIALOG MODAL DOCK -->
+  <div id="modal-container" class="modal-container hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card glass">
+      <header class="modal-header">
+        <h2 id="modal-title">Confirm Action</h2>
+        <button id="modal-close" class="modal-close-btn" aria-label="Close modal">&times;</button>
+      </header>
+      <div id="modal-body" class="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="vehicle-history.js"></script>
+</body>
+</html>

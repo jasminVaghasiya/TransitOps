@@ -13,9 +13,10 @@ export const vehicleSchema = Joi.object({
   make: Joi.string().trim().required(),
   modelName: Joi.string().trim().required(),
   capacityKg: Joi.number().positive().required(),
-  status: Joi.string().valid('Available', 'On Trip', 'In Shop', 'Retired').default('Available'),
-  vehicleType: Joi.string().valid('Truck', 'Van', 'Trailer', 'Car').default('Truck'),
-  region: Joi.string().valid('North', 'South', 'East', 'West').default('North'),
+  status: Joi.string().valid('Available', 'On Trip', 'In Shop', 'Retired', 'Sold').default('Available'),
+  purchasePrice: Joi.number().positive().optional(),
+  purchaseDate: Joi.date().optional(),
+  photoUrl: Joi.string().trim().allow('').optional(),
 });
 
 export const driverSchema = Joi.object({
@@ -78,9 +79,12 @@ export const updateVehicleSchema = Joi.object({
   make: Joi.string().trim().optional(),
   modelName: Joi.string().trim().optional(),
   capacityKg: Joi.number().positive().optional(),
-  status: Joi.string().valid('Available', 'On Trip', 'In Shop', 'Retired').optional(),
-  vehicleType: Joi.string().valid('Truck', 'Van', 'Trailer', 'Car').optional(),
-  region: Joi.string().valid('North', 'South', 'East', 'West').optional(),
+  status: Joi.string().valid('Available', 'On Trip', 'In Shop', 'Retired', 'Sold').optional(),
+  purchasePrice: Joi.number().positive().optional(),
+  purchaseDate: Joi.date().optional(),
+  sellingPrice: Joi.number().positive().optional(),
+  saleDate: Joi.date().optional(),
+  photoUrl: Joi.string().trim().allow('').optional(),
 });
 
 export const updateDriverSchema = Joi.object({
