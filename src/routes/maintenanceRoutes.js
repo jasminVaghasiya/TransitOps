@@ -136,7 +136,7 @@ router.patch(
         const options = session ? { session } : {};
 
         // If closing maintenance, restore vehicle to Available
-        if (status === 'Closed' && oldLog.status === 'Active') {
+        if (status === 'Completed' && oldLog.status === 'In Progress') {
           // Set vehicle status to Available, unless the vehicle was retired in the meantime
           const vehicle = await Vehicle.findById(oldLog.vehicle);
           if (vehicle && vehicle.status === 'In Shop') {
@@ -180,8 +180,8 @@ router.delete(
       await executeWithTransaction(async (session) => {
         const options = session ? { session } : {};
 
-        // If deleted log was active, return vehicle to Available
-        if (oldLog.status === 'Active') {
+        // If deleted log was active (In Progress), return vehicle to Available
+        if (oldLog.status === 'In Progress') {
           await Vehicle.findByIdAndUpdate(oldLog.vehicle, { status: 'Available' }, options);
         }
 

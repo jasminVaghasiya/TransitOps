@@ -22,7 +22,7 @@ export default class MaintenancePolicy extends BasePolicy {
     // Vehicle cannot have an active maintenance log already
     const activeMaintenanceExists = await Maintenance.exists({
       vehicle: vehicleId,
-      status: 'Active',
+      status: 'In Progress',
     });
 
     if (activeMaintenanceExists) {
@@ -38,8 +38,8 @@ export default class MaintenancePolicy extends BasePolicy {
   async canUpdate(actor, maintenance, req) {
     const { status } = req.body;
 
-    if (maintenance.status === 'Closed' && status !== 'Closed') {
-      return this.deny('Closed maintenance logs are immutable', 'MAINTENANCE_LOCKED');
+    if (maintenance.status === 'Completed' && status !== 'Completed') {
+      return this.deny('Completed maintenance logs are immutable', 'MAINTENANCE_LOCKED');
     }
 
     return this.allow();
@@ -49,8 +49,8 @@ export default class MaintenancePolicy extends BasePolicy {
    * Active maintenance logs can be deleted, closed ones require admin permission
    */
   async canDelete(actor, maintenance, req) {
-    if (maintenance.status === 'Closed' && !this.isAdmin(actor)) {
-      return this.deny('Only administrators can delete closed maintenance logs', 'MAINTENANCE_LOCKED');
+    if (maintenance.status === 'Completed' && !this.isAdmin(actor)) {
+      return this.deny('Only administrators can delete completed maintenance logs', 'MAINTENANCE_LOCKED');
     }
     return this.allow();
   }

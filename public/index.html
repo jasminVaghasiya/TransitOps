@@ -572,46 +572,36 @@
              PAGE: MAINTENANCE
              ========================================== -->
         <section id="page-maintenance" class="page-content hidden">
-          <div class="dashboard-grid">
-            <div class="grid-card glass">
-              <div class="card-header">
-                <h2>Active Workshop Records</h2>
-              </div>
-              <div class="table-container" style="border:none;">
-                <table id="maintenance-table">
-                  <thead>
-                    <tr>
-                      <th>Vehicle Registration</th>
-                      <th>Repair Description</th>
-                      <th>Logged Cost</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="maintenance-list"></tbody>
-                </table>
+          <div class="grid-card glass">
+            <div class="card-header">
+              <h2>SERVICE LOG</h2>
+            </div>
+            <div class="control-row" style="margin-top: 15px; margin-bottom: 15px;">
+              <div class="filters-left">
+                <input type="text" class="input-filter" id="maint-search" placeholder="Search Vehicle...">
+                <select class="input-select" id="maint-filter-status">
+                  <option value="">All Statuses</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Completed">Completed</option>
+                </select>
               </div>
             </div>
-
-            <!-- Maintenance Schedule Mock Calendar -->
-            <div class="grid-card glass">
-              <div class="card-header">
-                <h2>Upcoming Fleet Services</h2>
-              </div>
-              <div class="maintenance-calendar">
-                <div class="cal-day">
-                  <span class="day-num">14</span>
-                  <div class="cal-event warning">
-                    <p>TX-890-GP Break Pads Check</p>
-                  </div>
-                </div>
-                <div class="cal-day">
-                  <span class="day-num">19</span>
-                  <div class="cal-event danger">
-                    <p>Volvo FH16 Engine Tune</p>
-                  </div>
-                </div>
-              </div>
+            <div class="table-container" style="border:none;">
+              <table id="maintenance-table">
+                <thead>
+                  <tr>
+                    <th>Vehicle Number</th>
+                    <th>Date of Maintenance</th>
+                    <th>Problem</th>
+                    <th>Type of Repair/Service</th>
+                    <th>Mechanic or Workshop</th>
+                    <th>Cost</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="maintenance-list"></tbody>
+              </table>
             </div>
           </div>
         </section>
