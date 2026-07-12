@@ -621,46 +621,36 @@
              PAGE: MAINTENANCE
              ========================================== -->
         <section id="page-maintenance" class="page-content hidden">
-          <div class="dashboard-grid">
-            <div class="grid-card glass">
-              <div class="card-header">
-                <h2>Active Workshop Records</h2>
-              </div>
-              <div class="table-container" style="border:none;">
-                <table id="maintenance-table">
-                  <thead>
-                    <tr>
-                      <th>Vehicle Registration</th>
-                      <th>Repair Description</th>
-                      <th>Logged Cost</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="maintenance-list"></tbody>
-                </table>
+          <div class="grid-card glass">
+            <div class="card-header">
+              <h2>SERVICE LOG</h2>
+            </div>
+            <div class="control-row" style="margin-top: 15px; margin-bottom: 15px;">
+              <div class="filters-left">
+                <input type="text" class="input-filter" id="maint-search" placeholder="Search Vehicle...">
+                <select class="input-select" id="maint-filter-status">
+                  <option value="">All Statuses</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Completed">Completed</option>
+                </select>
               </div>
             </div>
-
-            <!-- Maintenance Schedule Mock Calendar -->
-            <div class="grid-card glass">
-              <div class="card-header">
-                <h2>Upcoming Fleet Services</h2>
-              </div>
-              <div class="maintenance-calendar">
-                <div class="cal-day">
-                  <span class="day-num">14</span>
-                  <div class="cal-event warning">
-                    <p>TX-890-GP Break Pads Check</p>
-                  </div>
-                </div>
-                <div class="cal-day">
-                  <span class="day-num">19</span>
-                  <div class="cal-event danger">
-                    <p>Volvo FH16 Engine Tune</p>
-                  </div>
-                </div>
-              </div>
+            <div class="table-container" style="border:none;">
+              <table id="maintenance-table">
+                <thead>
+                  <tr>
+                    <th>Vehicle Number</th>
+                    <th>Date of Maintenance</th>
+                    <th>Problem</th>
+                    <th>Type of Repair/Service</th>
+                    <th>Mechanic or Workshop</th>
+                    <th>Cost</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="maintenance-list"></tbody>
+              </table>
             </div>
           </div>
         </section>
@@ -720,58 +710,101 @@
              PAGE: REPORTS
              ========================================== -->
         <section id="page-reports" class="page-content hidden">
+          <!-- Control Row -->
           <div class="control-row">
-            <button class="btn btn-primary" id="btn-download-pdf"><i class="fa-solid fa-file-pdf"></i> Download PDF Report</button>
-            <button class="btn btn-outline" id="btn-download-excel"><i class="fa-solid fa-file-excel"></i> Download Excel</button>
+            <div class="filters-left">
+              <h1 style="font-size: 24px; font-weight: 700; color: var(--text-main); font-family: var(--font-family);">Operational Analytics & ROI</h1>
+            </div>
+            <div class="actions-right">
+              <button class="btn btn-primary" id="btn-export-reports-csv"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+              <button class="btn btn-outline" id="btn-export-reports-pdf"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
+            </div>
           </div>
-          <div class="dashboard-grid">
+
+          <!-- KPI Summary Grid -->
+          <div class="stats-grid" style="margin-bottom: 24px;">
+            <div class="stat-card glass">
+              <div class="stat-header">
+                <span class="stat-title">Avg Fuel Efficiency</span>
+                <i class="fa-solid fa-gas-pump" style="color: var(--warning);"></i>
+              </div>
+              <div class="stat-main">
+                <div class="stat-value" id="rep-avg-fuel-eff">0.00 km/L</div>
+              </div>
+            </div>
+            <div class="stat-card glass">
+              <div class="stat-header">
+                <span class="stat-title">Fleet Utilization</span>
+                <i class="fa-solid fa-truck-ramp-box" style="color: var(--info);"></i>
+              </div>
+              <div class="stat-main">
+                <div class="stat-value" id="rep-fleet-util">0.0%</div>
+              </div>
+            </div>
+            <div class="stat-card glass">
+              <div class="stat-header">
+                <span class="stat-title">Total Operational Cost</span>
+                <i class="fa-solid fa-dollar-sign" style="color: var(--danger);"></i>
+              </div>
+              <div class="stat-main">
+                <div class="stat-value" id="rep-total-op-cost">$ 0</div>
+              </div>
+            </div>
+            <div class="stat-card glass">
+              <div class="stat-header">
+                <span class="stat-title">Average Vehicle ROI</span>
+                <i class="fa-solid fa-chart-line" style="color: var(--success);"></i>
+              </div>
+              <div class="stat-main">
+                <div class="stat-value" id="rep-avg-roi">0%</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Graphs Grid -->
+          <div class="dashboard-grid" style="margin-bottom: 24px;">
+            <!-- Chart 1: Cost vs Revenue -->
             <div class="grid-card glass">
               <div class="card-header">
-                <h2>Monthly Operations Cost Breakdown</h2>
+                <h2>Cost vs. Estimated Revenue by Vehicle</h2>
               </div>
-              <div class="chart-mock">
-                <!-- SVG bar chart -->
-                <svg viewBox="0 0 400 200" style="width: 100%; height: 100%;">
-                  <!-- Background grid -->
-                  <line x1="40" y1="20" x2="380" y2="20" stroke="rgba(255,255,255,0.05)"></line>
-                  <line x1="40" y1="70" x2="380" y2="70" stroke="rgba(255,255,255,0.05)"></line>
-                  <line x1="40" y1="120" x2="380" y2="120" stroke="rgba(255,255,255,0.05)"></line>
-                  <line x1="40" y1="170" x2="380" y2="170" stroke="rgba(255,255,255,0.1)"></line>
-                  
-                  <!-- Bar 1 -->
-                  <rect x="70" y="80" width="30" height="90" fill="#7C3AED" rx="4"></rect>
-                  <text x="75" y="190" fill="#94A3B8" font-size="10">May</text>
-                  
-                  <!-- Bar 2 -->
-                  <rect x="150" y="40" width="30" height="130" fill="#8B5CF6" rx="4"></rect>
-                  <text x="155" y="190" fill="#94A3B8" font-size="10">Jun</text>
-
-                  <!-- Bar 3 -->
-                  <rect x="230" y="60" width="30" height="110" fill="#10B981" rx="4"></rect>
-                  <text x="235" y="190" fill="#94A3B8" font-size="10">Jul</text>
-
-                  <!-- Bar 4 -->
-                  <rect x="310" y="20" width="30" height="150" fill="#F59E0B" rx="4"></rect>
-                  <text x="315" y="190" fill="#94A3B8" font-size="10">Aug</text>
-                </svg>
+              <div class="chart-mock" id="chart-cost-revenue" style="height: 250px; display: flex; align-items: center; justify-content: center; position: relative;">
+                <!-- Dynamically populated SVG -->
               </div>
             </div>
 
+            <!-- Chart 2: ROI % -->
             <div class="grid-card glass">
               <div class="card-header">
-                <h2>Total Active Miles Traveled</h2>
+                <h2>Vehicle ROI Comparison (%)</h2>
               </div>
-              <div class="chart-mock">
-                <!-- SVG line chart -->
-                <svg viewBox="0 0 400 200" style="width: 100%; height: 100%;">
-                  <path d="M40,160 L120,120 L200,80 L280,130 L360,40" fill="none" stroke="#7C3AED" stroke-width="3"></path>
-                  <circle cx="120" cy="120" r="4" fill="#7C3AED"></circle>
-                  <circle cx="200" cy="80" r="4" fill="#7C3AED"></circle>
-                  <circle cx="280" cy="130" r="4" fill="#7C3AED"></circle>
-                  <circle cx="360" cy="40" r="4" fill="#7C3AED"></circle>
-                  <line x1="40" y1="170" x2="380" y2="170" stroke="rgba(255,255,255,0.1)"></line>
-                </svg>
+              <div class="chart-mock" id="chart-roi" style="height: 250px; display: flex; align-items: center; justify-content: center; position: relative;">
+                <!-- Dynamically populated SVG -->
               </div>
+            </div>
+          </div>
+
+          <!-- Table: Breakdown -->
+          <div class="grid-card glass">
+            <div class="card-header">
+              <h2>Vehicle Metrics Breakdown</h2>
+            </div>
+            <div class="table-container" style="border:none; margin-top: 15px;">
+              <table id="reports-table">
+                <thead>
+                  <tr>
+                    <th>Vehicle</th>
+                    <th>Distance (km)</th>
+                    <th>Fuel (L)</th>
+                    <th>Efficiency (km/L)</th>
+                    <th>Trips</th>
+                    <th>Op. Cost</th>
+                    <th>Est. Revenue</th>
+                    <th>ROI</th>
+                  </tr>
+                </thead>
+                <tbody id="reports-list"></tbody>
+              </table>
             </div>
           </div>
         </section>

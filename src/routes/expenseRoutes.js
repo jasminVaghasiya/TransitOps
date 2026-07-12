@@ -33,7 +33,7 @@ router.post(
   async (req, res, next) => {
     try {
       const expense = await Expense.create(req.body);
-      
+
       await writeAuditLog(req, 'CREATE', 'Expense', expense._id, null, expense);
 
       res.status(201).json({
