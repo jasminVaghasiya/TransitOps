@@ -918,7 +918,7 @@ tr:hover {
   border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
-.status-Retired, .status-Cancelled, .status-Rejected, .status-Suspended {
+.status-Retired, .status-Cancelled, .status-Rejected, .status-Suspended, .status-Sold {
   background: var(--danger-glow);
   color: var(--danger);
   border: 1px solid rgba(239, 68, 68, 0.2);

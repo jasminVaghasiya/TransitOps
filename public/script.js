@@ -7,6 +7,15 @@ let currentUser = null;
 let currentActivePage = 'dashboard';
 let refreshInterval = null;
 
+const DEFAULT_VEHICLE_PHOTO = 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=400&q=80';
+
+const toBase64 = file => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = () => resolve(reader.result);
+  reader.onerror = error => reject(error);
+});
+
 // ==========================================
 // CLIENT AUTHORIZATION RULES (RBAC)
 // ==========================================
@@ -20,6 +29,7 @@ const ROLE_ABILITIES = {
     update: ['Vehicle', 'Maintenance'],
     delete: ['Vehicle', 'Maintenance'],
     retire: ['Vehicle'],
+    sell: ['Vehicle'],
     assign: ['Vehicle'],
     close: ['Maintenance'],
     export: ['Report'],
@@ -386,15 +396,26 @@ async function loadVehicles() {
   container.innerHTML = '<tr><td colspan="7" class="empty-message">Loading Fleet registry...</td></tr>';
 
   try {
-    const res = await fetchAPI('/api/vehicles');
+    const searchVal = document.getElementById('vehicles-search')?.value || '';
+    const statusVal = document.getElementById('vehicles-filter-status')?.value || '';
+    
+    let url = '/api/vehicles?limit=100';
+    if (searchVal) {
+      url += `&search=${encodeURIComponent(searchVal)}`;
+    }
+    if (statusVal) {
+      url += `&status=${encodeURIComponent(statusVal)}`;
+    }
+
+    const res = await fetchAPI(url);
     container.innerHTML = '';
 
     if (res.data.vehicles.length === 0) {
-      container.innerHTML = '<tr><td colspan="7" class="empty-message">No vehicles recorded.</td></tr>';
+      container.innerHTML = '<tr><td colspan="7" class="empty-message">No matching vehicles recorded.</td></tr>';
       return;
     }
 
-    const hasActions = can('update', 'Vehicle') || can('retire', 'Vehicle');
+    const hasActions = can('update', 'Vehicle') || can('retire', 'Vehicle') || can('sell', 'Vehicle');
     const actionsHeader = document.querySelector('#vehicles-table th:last-child');
     if (actionsHeader) {
       if (hasActions) actionsHeader.classList.remove('hidden');
@@ -404,35 +425,93 @@ async function loadVehicles() {
     res.data.vehicles.forEach(vehicle => {
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td><strong>${vehicle.registrationNumber}</strong></td>
+        <td>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:40px; height:40px; border-radius:4px; overflow:hidden; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.05); border:1px solid var(--border-color); flex-shrink:0;">
+              <img src="${vehicle.photoUrl || DEFAULT_VEHICLE_PHOTO}" style="width:100%; height:100%; object-fit:cover;">
+            </div>
+            <a href="#" class="vehicle-history-link" data-id="${vehicle._id}" style="color:var(--accent); font-weight:700; text-decoration:none;">${vehicle.registrationNumber}</a>
+          </div>
+        </td>
         <td>${vehicle.make} ${vehicle.modelName}</td>
         <td>${vehicle.capacityKg.toLocaleString()} Kg</td>
-        <td>Active (12 Months)</td>
+        <td>
+          Bought: ${vehicle.purchasePrice ? `$${vehicle.purchasePrice.toLocaleString()}` : '—'}
+          ${vehicle.status === 'Sold' ? `<br><span style="color:var(--danger)">Sold: $${vehicle.sellingPrice ? vehicle.sellingPrice.toLocaleString() : '—'}</span>` : ''}
+        </td>
         <td>—</td>
         <td><span class="badge status-${vehicle.status.replace(' ', '-')}">${vehicle.status}</span></td>
         ${hasActions ? `
         <td>
-          ${can('update', 'Vehicle') ? `<button class="btn btn-outline edit-vehicle-btn" data-id="${vehicle._id}" style="padding:4px 8px; font-size:11px;">Edit</button>` : ''}
-          ${can('retire', 'Vehicle') && vehicle.status !== 'Retired' ? `<button class="btn btn-logout retire-vehicle-btn" data-id="${vehicle._id}" style="padding:4px 8px; font-size:11px; margin-left:4px;">Retire</button>` : ''}
+          ${vehicle.status === 'Sold' ? '—' : `
+            ${vehicle.status === 'Retired' ? `
+              ${can('sell', 'Vehicle') ? `<button class="btn btn-primary sell-vehicle-btn" data-id="${vehicle._id}" style="padding:4px 8px; font-size:11px; background:#10B981; border-color:#10B981;">Sell</button>` : '—'}
+            ` : `
+              ${can('update', 'Vehicle') ? `<button class="btn btn-outline edit-vehicle-btn" data-id="${vehicle._id}" style="padding:4px 8px; font-size:11px;">Edit</button>` : ''}
+            `}
+          `}
         </td>
         ` : ''}
       `;
       container.appendChild(row);
     });
 
-    document.querySelectorAll('.retire-vehicle-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        if (confirm('Retire this vehicle?')) {
-          await fetchAPI(`/api/vehicles/${btn.dataset.id}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ status: 'Retired' })
-          });
-          showToast('Vehicle retired.');
-          loadVehicles();
-        }
+    document.querySelectorAll('.sell-vehicle-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        renderSellVehicleForm(btn.dataset.id);
+      });
+    });
+
+    document.querySelectorAll('.edit-vehicle-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        renderEditVehicleForm(btn.dataset.id);
+      });
+    });
+
+    document.querySelectorAll('.vehicle-history-link').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.location.href = `vehicle-history.html?id=${link.dataset.id}`;
       });
     });
   } catch (err) {}
+}
+
+function renderSellVehicleForm(vehicleId) {
+  modalContainer.classList.remove('hidden');
+  modalTitle.textContent = 'Sell Vehicle';
+  modalBody.innerHTML = `
+    <form id="sell-vehicle-form">
+      <div class="input-group">
+        <input type="number" id="sell-price" required placeholder=" ">
+        <label for="sell-price"><i class="fa-solid fa-dollar-sign"></i> Selling Price</label>
+      </div>
+      <div class="input-group">
+        <input type="date" id="sell-date" required placeholder=" ">
+        <label for="sell-date"><i class="fa-solid fa-calendar-days"></i> Date of Sale</label>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block" style="background:#10B981; border-color:#10B981;">Complete Sale</button>
+    </form>
+  `;
+
+  document.getElementById('sell-date').valueAsDate = new Date();
+
+  document.getElementById('sell-vehicle-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      await fetchAPI(`/api/vehicles/${vehicleId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: 'Sold',
+          sellingPrice: parseFloat(document.getElementById('sell-price').value),
+          saleDate: document.getElementById('sell-date').value,
+        }),
+      });
+      showToast('Vehicle sold successfully!');
+      modalContainer.classList.add('hidden');
+      loadVehicles();
+    } catch (err) {}
+  });
 }
 
 async function loadDrivers() {
@@ -834,7 +913,7 @@ modalClose.addEventListener('click', () => {
 
 floatingActionBtn.addEventListener('click', () => {
   modalContainer.classList.remove('hidden');
-  modalTitle.textContent = `Register New ${currentActivePage.charAt(0).toUpperCase() + currentActivePage.slice(1, -1)}`;
+  modalTitle.textContent = currentActivePage === 'vehicles' ? 'Buy New Vehicle' : `Register New ${currentActivePage.charAt(0).toUpperCase() + currentActivePage.slice(1, -1)}`;
 
   if (currentActivePage === 'vehicles') {
     renderVehicleForm();
@@ -868,13 +947,60 @@ function renderVehicleForm() {
         <input type="number" id="veh-cap" required placeholder=" ">
         <label for="veh-cap"><i class="fa-solid fa-weight-hanging"></i> Capacity (Kg)</label>
       </div>
-      <button type="submit" class="btn btn-primary btn-block">Add Vehicle</button>
+      <div class="input-group">
+        <input type="number" id="veh-purchase-price" required placeholder=" ">
+        <label for="veh-purchase-price"><i class="fa-solid fa-dollar-sign"></i> Purchase Price</label>
+      </div>
+      <div class="input-group">
+        <input type="date" id="veh-purchase-date" required placeholder=" ">
+        <label for="veh-purchase-date"><i class="fa-solid fa-calendar-days"></i> Purchase Date</label>
+      </div>
+      <div class="input-group" style="margin-bottom: 24px;">
+        <input type="file" id="veh-photo-file" accept="image/*" style="padding: 10px 0;">
+        <label for="veh-photo-file" style="position: static; transform: none; font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 6px;">
+          <i class="fa-solid fa-image"></i> Vehicle Photo File (Optional)
+        </label>
+        <div id="create-photo-preview" style="margin-top: 10px; width: 80px; height: 80px; border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.03);">
+          <img src="${DEFAULT_VEHICLE_PHOTO}" style="width: 100%; height: 100%; object-fit: cover;" id="create-preview-img">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Buy & Add Vehicle</button>
     </form>
   `;
+
+  document.getElementById('veh-purchase-date').valueAsDate = new Date();
+
+  const fileInput = document.getElementById('veh-photo-file');
+  const previewImg = document.getElementById('create-preview-img');
+  
+  fileInput.addEventListener('change', async () => {
+    if (fileInput.files.length > 0) {
+      const file = fileInput.files[0];
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Image size cannot exceed 5MB.', 'error');
+        fileInput.value = '';
+        previewImg.src = DEFAULT_VEHICLE_PHOTO;
+        return;
+      }
+      try {
+        const base64 = await toBase64(file);
+        previewImg.src = base64;
+      } catch (err) {
+        console.error(err);
+      }
+    } else {
+      previewImg.src = DEFAULT_VEHICLE_PHOTO;
+    }
+  });
 
   document.getElementById('create-vehicle-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
+      let photoUrl = DEFAULT_VEHICLE_PHOTO;
+      if (fileInput.files.length > 0) {
+        photoUrl = await toBase64(fileInput.files[0]);
+      }
+
       await fetchAPI('/api/vehicles', {
         method: 'POST',
         body: JSON.stringify({
@@ -882,13 +1008,117 @@ function renderVehicleForm() {
           make: document.getElementById('veh-make').value,
           modelName: document.getElementById('veh-model').value,
           capacityKg: parseFloat(document.getElementById('veh-cap').value),
+          purchasePrice: parseFloat(document.getElementById('veh-purchase-price').value),
+          purchaseDate: document.getElementById('veh-purchase-date').value,
+          photoUrl: photoUrl,
         }),
       });
-      showToast('Vehicle created successfully!');
+      showToast('Vehicle purchased and registered successfully!');
       modalContainer.classList.add('hidden');
       loadVehicles();
     } catch (err) {}
   });
+}
+
+async function renderEditVehicleForm(vehicleId) {
+  modalContainer.classList.remove('hidden');
+  modalTitle.textContent = 'Edit Vehicle Details';
+  modalBody.innerHTML = '<div class="empty-message">Loading vehicle details...</div>';
+
+  try {
+    const res = await fetchAPI(`/api/vehicles/${vehicleId}`);
+    const vehicle = res.data.vehicle;
+
+    modalBody.innerHTML = `
+      <form id="edit-vehicle-form">
+        <div class="input-group">
+          <input type="text" id="edit-veh-reg" required value="${vehicle.registrationNumber || ''}" placeholder=" ">
+          <label for="edit-veh-reg"><i class="fa-solid fa-hashtag"></i> Registration Number</label>
+        </div>
+        <div class="input-group">
+          <input type="text" id="edit-veh-make" required value="${vehicle.make || ''}" placeholder=" ">
+          <label for="edit-veh-make"><i class="fa-solid fa-truck"></i> Make</label>
+        </div>
+        <div class="input-group">
+          <input type="text" id="edit-veh-model" required value="${vehicle.modelName || ''}" placeholder=" ">
+          <label for="edit-veh-model"><i class="fa-solid fa-cube"></i> Model Name</label>
+        </div>
+        <div class="input-group">
+          <input type="number" id="edit-veh-cap" required value="${vehicle.capacityKg || ''}" placeholder=" ">
+          <label for="edit-veh-cap"><i class="fa-solid fa-weight-hanging"></i> Capacity (Kg)</label>
+        </div>
+        <div class="input-group">
+          <input type="number" id="edit-veh-purchase-price" value="${vehicle.purchasePrice || ''}" placeholder=" ">
+          <label for="edit-veh-purchase-price"><i class="fa-solid fa-dollar-sign"></i> Purchase Price</label>
+        </div>
+        <div class="input-group">
+          <input type="date" id="edit-veh-purchase-date" value="${vehicle.purchaseDate ? vehicle.purchaseDate.substring(0, 10) : ''}" placeholder=" ">
+          <label for="edit-veh-purchase-date"><i class="fa-solid fa-calendar-days"></i> Purchase Date</label>
+        </div>
+        <div class="input-group" style="margin-bottom: 24px;">
+          <input type="file" id="edit-veh-photo-file" accept="image/*" style="padding: 10px 0;">
+          <label for="edit-veh-photo-file" style="position: static; transform: none; font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 6px;">
+            <i class="fa-solid fa-image"></i> Vehicle Photo File (Optional)
+          </label>
+          <div id="edit-photo-preview" style="margin-top: 10px; width: 80px; height: 80px; border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.03);">
+            <img src="${vehicle.photoUrl || DEFAULT_VEHICLE_PHOTO}" style="width: 100%; height: 100%; object-fit: cover;" id="edit-preview-img">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Save Changes</button>
+      </form>
+    `;
+
+    const fileInput = document.getElementById('edit-veh-photo-file');
+    const previewImg = document.getElementById('edit-preview-img');
+    
+    fileInput.addEventListener('change', async () => {
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        if (file.size > 5 * 1024 * 1024) {
+          showToast('Image size cannot exceed 5MB.', 'error');
+          fileInput.value = '';
+          previewImg.src = vehicle.photoUrl || DEFAULT_VEHICLE_PHOTO;
+          return;
+        }
+        try {
+          const base64 = await toBase64(file);
+          previewImg.src = base64;
+        } catch (err) {
+          console.error(err);
+        }
+      } else {
+        previewImg.src = vehicle.photoUrl || DEFAULT_VEHICLE_PHOTO;
+      }
+    });
+
+    document.getElementById('edit-vehicle-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        let photoUrl = vehicle.photoUrl || DEFAULT_VEHICLE_PHOTO;
+        if (fileInput.files.length > 0) {
+          photoUrl = await toBase64(fileInput.files[0]);
+        }
+
+        await fetchAPI(`/api/vehicles/${vehicleId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            registrationNumber: document.getElementById('edit-veh-reg').value,
+            make: document.getElementById('edit-veh-make').value,
+            modelName: document.getElementById('edit-veh-model').value,
+            capacityKg: parseFloat(document.getElementById('edit-veh-cap').value),
+            purchasePrice: parseFloat(document.getElementById('edit-veh-purchase-price').value) || undefined,
+            purchaseDate: document.getElementById('edit-veh-purchase-date').value || undefined,
+            photoUrl: photoUrl,
+          }),
+        });
+        showToast('Vehicle details updated successfully!');
+        modalContainer.classList.add('hidden');
+        loadVehicles();
+      } catch (err) {}
+    });
+  } catch (err) {
+    modalBody.innerHTML = '<div class="empty-message">Failed to load vehicle details.</div>';
+  }
 }
 
 function renderDriverForm() {
@@ -1172,3 +1402,27 @@ function renderFinanceForm() {
 
   showExpenseForm();
 }
+
+// ==========================================
+// VEHICLE SEARCH & FILTER BINDINGS
+// ==========================================
+(() => {
+  const vehiclesSearch = document.getElementById('vehicles-search');
+  const vehiclesFilterStatus = document.getElementById('vehicles-filter-status');
+
+  if (vehiclesSearch) {
+    let debounceTimeout;
+    vehiclesSearch.addEventListener('input', () => {
+      clearTimeout(debounceTimeout);
+      debounceTimeout = setTimeout(() => {
+        loadVehicles();
+      }, 300);
+    });
+  }
+
+  if (vehiclesFilterStatus) {
+    vehiclesFilterStatus.addEventListener('change', () => {
+      loadVehicles();
+    });
+  }
+})();

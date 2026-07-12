@@ -30,9 +30,12 @@ export default class VehiclePolicy extends BasePolicy {
     if (status && status !== vehicle.status) {
       const oldStatus = vehicle.status;
 
-      // Retired is final unless administrator restores
-      if (oldStatus === 'Retired' && !this.isAdmin(actor)) {
-        return this.deny('Only administrators can restore a retired vehicle', 'RESTORE_DENIED');
+      // Sold is final unless administrator restores.
+      if (oldStatus === 'Sold' && !this.isAdmin(actor)) {
+        return this.deny('Only administrators can restore a sold vehicle', 'RESTORE_DENIED');
+      }
+      if (oldStatus === 'Retired' && status !== 'Sold' && status !== 'Available') {
+        return this.deny('Retired vehicles can only be sold or reactivated to Available', 'RESTORE_DENIED');
       }
 
       // Validate allowed state transitions
@@ -42,16 +45,18 @@ export default class VehiclePolicy extends BasePolicy {
         (oldStatus === 'Available' && status === 'In Shop') ||
         (oldStatus === 'In Shop' && status === 'Available') ||
         (oldStatus === 'Available' && status === 'Retired') ||
-        (this.isAdmin(actor) && oldStatus === 'Retired' && status === 'Available'); // Admin restore override
+        (oldStatus === 'Retired' && status === 'Available') || // Reactivate
+        (oldStatus === 'Retired' && status === 'Sold') || // Can only sell after retired
+        (this.isAdmin(actor) && oldStatus === 'Sold' && status === 'Available'); // Admin restore override
 
       if (!isAllowed) {
         return this.deny(`Illegal status transition from '${oldStatus}' to '${status}'`, 'INVALID_STATUS_TRANSITION');
       }
     }
 
-    // 3. Prevent general edits on retired vehicles
-    if (vehicle.status === 'Retired' && !status && !this.isAdmin(actor)) {
-      return this.deny('Retired vehicles cannot be modified', 'RETIRED_LOCK');
+    // 3. Prevent general edits on retired or sold vehicles
+    if ((vehicle.status === 'Retired' || vehicle.status === 'Sold') && !status && !this.isAdmin(actor)) {
+      return this.deny('Retired or sold vehicles cannot be modified', 'RETIRED_LOCK');
     }
 
     return this.allow();
