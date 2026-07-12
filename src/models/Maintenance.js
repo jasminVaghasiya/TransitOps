@@ -7,9 +7,24 @@ const maintenanceSchema = new mongoose.Schema(
       ref: 'Vehicle',
       required: [true, 'Vehicle is required for maintenance record'],
     },
-    description: {
+    maintenanceDate: {
+      type: Date,
+      default: Date.now,
+      required: [true, 'Date of maintenance is required'],
+    },
+    problem: {
       type: String,
-      required: [true, 'Maintenance description is required'],
+      required: [true, 'Problem description is required'],
+      trim: true,
+    },
+    repairType: {
+      type: String,
+      required: [true, 'Type of repair/service is required'],
+      trim: true,
+    },
+    workshop: {
+      type: String,
+      required: [true, 'Mechanic or workshop details are required'],
       trim: true,
     },
     cost: {
@@ -19,8 +34,12 @@ const maintenanceSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['Active', 'Closed'],
-      default: 'Active',
+      enum: ['In Progress', 'Completed'],
+      default: 'In Progress',
+    },
+    description: {
+      type: String,
+      trim: true,
     },
     startDate: {
       type: Date,

@@ -924,7 +924,7 @@ tr:hover {
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
-.status-On-Trip, .status-Dispatched, .status-Active {
+.status-On-Trip, .status-Dispatched, .status-Active, .status-In-Progress {
   background: var(--info-glow);
   color: var(--info);
   border: 1px solid rgba(59, 130, 246, 0.2);

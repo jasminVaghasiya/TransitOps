@@ -769,14 +769,14 @@ async function loadFuelLogs() {
 
 async function loadMaintenance() {
   const container = document.getElementById('maintenance-list');
-  container.innerHTML = '<tr><td colspan="5" class="empty-message">Loading Repairs...</td></tr>';
+  container.innerHTML = '<tr><td colspan="8" class="empty-message">Loading Repairs...</td></tr>';
 
   try {
     const res = await fetchAPI('/api/maintenance');
     container.innerHTML = '';
 
     if (res.data.logs.length === 0) {
-      container.innerHTML = '<tr><td colspan="5" class="empty-message">No active workshop records.</td></tr>';
+      container.innerHTML = '<tr><td colspan="8" class="empty-message">No active workshop records.</td></tr>';
       return;
     }
 
@@ -789,15 +789,18 @@ async function loadMaintenance() {
 
     res.data.logs.forEach(log => {
       const row = document.createElement('tr');
-      const isActive = log.status === 'Active';
+      const isInProgress = log.status === 'In Progress';
       row.innerHTML = `
         <td><strong>${log.vehicle?.registrationNumber || 'Unknown'}</strong></td>
-        <td>${log.description}</td>
+        <td>${log.maintenanceDate ? new Date(log.maintenanceDate).toLocaleDateString() : (log.startDate ? new Date(log.startDate).toLocaleDateString() : '—')}</td>
+        <td>${log.problem || log.description || '—'}</td>
+        <td>${log.repairType || '—'}</td>
+        <td>${log.workshop || '—'}</td>
         <td>$ ${log.cost.toLocaleString()}</td>
-        <td><span class="badge status-${log.status}">${log.status}</span></td>
+        <td><span class="badge status-${log.status.replace(' ', '-')}">${log.status}</span></td>
         ${hasActions ? `
         <td>
-          ${isActive ? `<button class="btn btn-outline close-repair-btn" data-id="${log._id}" style="padding:4px 8px; font-size:11px; color:var(--success);">Close Repair</button>` : '—'}
+          ${isInProgress ? `<button class="btn btn-outline close-repair-btn" data-id="${log._id}" style="padding:4px 8px; font-size:11px; color:var(--success);">Complete Repair</button>` : '—'}
         </td>
         ` : ''}
       `;
@@ -808,9 +811,9 @@ async function loadMaintenance() {
       btn.addEventListener('click', async () => {
         await fetchAPI(`/api/maintenance/${btn.dataset.id}`, {
           method: 'PATCH',
-          body: JSON.stringify({ status: 'Closed' })
+          body: JSON.stringify({ status: 'Completed' })
         });
-        showToast('Repair closed. Vehicle released.');
+        showToast('Repair completed. Vehicle released.');
         loadMaintenance();
       });
     });
@@ -1250,16 +1253,30 @@ async function renderMaintenanceForm() {
           <label for="maint-veh"><i class="fa-solid fa-truck"></i> Select Available Vehicle</label>
         </div>
         <div class="input-group">
-          <input type="text" id="maint-desc" required placeholder=" ">
-          <label for="maint-desc"><i class="fa-solid fa-wrench"></i> Repair Description</label>
+          <input type="date" id="maint-date" required placeholder=" ">
+          <label for="maint-date"><i class="fa-solid fa-calendar-days"></i> Date of Maintenance</label>
+        </div>
+        <div class="input-group">
+          <input type="text" id="maint-problem" required placeholder=" ">
+          <label for="maint-problem"><i class="fa-solid fa-circle-exclamation"></i> Problem with the Vehicle</label>
+        </div>
+        <div class="input-group">
+          <input type="text" id="maint-repair-type" required placeholder=" ">
+          <label for="maint-repair-type"><i class="fa-solid fa-wrench"></i> Type of Repair/Service</label>
+        </div>
+        <div class="input-group">
+          <input type="text" id="maint-workshop" required placeholder=" ">
+          <label for="maint-workshop"><i class="fa-solid fa-warehouse"></i> Mechanic or Workshop</label>
         </div>
         <div class="input-group">
           <input type="number" id="maint-cost" required placeholder=" ">
-          <label for="maint-cost"><i class="fa-solid fa-dollar-sign"></i> Cost ($)</label>
+          <label for="maint-cost"><i class="fa-solid fa-dollar-sign"></i> Cost of Maintenance ($)</label>
         </div>
         <button type="submit" class="btn btn-primary btn-block">Send to Workshop</button>
       </form>
     `;
+
+    document.getElementById('maint-date').valueAsDate = new Date();
 
     document.getElementById('create-maint-form').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -1268,8 +1285,12 @@ async function renderMaintenanceForm() {
           method: 'POST',
           body: JSON.stringify({
             vehicle: document.getElementById('maint-veh').value,
-            description: document.getElementById('maint-desc').value,
+            maintenanceDate: document.getElementById('maint-date').value,
+            problem: document.getElementById('maint-problem').value,
+            repairType: document.getElementById('maint-repair-type').value,
+            workshop: document.getElementById('maint-workshop').value,
             cost: parseFloat(document.getElementById('maint-cost').value),
+            description: document.getElementById('maint-problem').value,
           }),
         });
         showToast('Vehicle sent to workshop.');
