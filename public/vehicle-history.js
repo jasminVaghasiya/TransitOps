@@ -84,13 +84,15 @@ async function loadHistory(id) {
       maintContainer.innerHTML = maintenance.map(log => `
         <div class="history-item">
           <div class="item-header">
-            <strong>${log.description}</strong>
-            <span class="badge status-${log.status}">${log.status}</span>
+            <strong>${log.repairType || log.description || 'Repair'}</strong>
+            <span class="badge status-${log.status.replace(' ', '-')}">${log.status}</span>
           </div>
-          <div class="item-body">
+          <div class="item-body" style="font-size:12px; line-height: 1.6; margin-top: 6px;">
+            Problem: <strong>${log.problem || '—'}</strong><br>
+            Workshop: <strong>${log.workshop || '—'}</strong><br>
             Cost: <strong>$${log.cost.toLocaleString()}</strong><br>
-            Opened: ${new Date(log.startDate).toLocaleDateString()} 
-            ${log.endDate ? `| Closed: ${new Date(log.endDate).toLocaleDateString()}` : ''}
+            Date: ${log.maintenanceDate ? new Date(log.maintenanceDate).toLocaleDateString() : new Date(log.startDate).toLocaleDateString()}
+            ${log.endDate ? ` | Completed: ${new Date(log.endDate).toLocaleDateString()}` : ''}
           </div>
         </div>
       `).join('');

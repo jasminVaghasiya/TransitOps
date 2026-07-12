@@ -22,7 +22,7 @@ export default class MaintenancePolicy extends BasePolicy {
     // Vehicle cannot have an active maintenance log already
     const activeMaintenanceExists = await Maintenance.exists({
       vehicle: vehicleId,
-      status: 'Active',
+      status: 'In Progress',
     });
 
     if (activeMaintenanceExists) {

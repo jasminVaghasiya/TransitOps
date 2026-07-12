@@ -49,7 +49,10 @@ export const tripSchema = Joi.object({
 
 export const maintenanceSchema = Joi.object({
   vehicle: Joi.string().custom(objectId).required(),
-  description: Joi.string().trim().required(),
+  maintenanceDate: Joi.date().default(() => new Date()),
+  problem: Joi.string().trim().required(),
+  repairType: Joi.string().trim().required(),
+  workshop: Joi.string().trim().required(),
   cost: Joi.number().min(0).required(),
   status: Joi.string().valid('Active', 'Closed', 'Completed', 'Cancelled').default('Active'),
 });
@@ -123,7 +126,10 @@ export const updateTripSchema = Joi.object({
 
 export const updateMaintenanceSchema = Joi.object({
   vehicle: Joi.string().custom(objectId).optional(),
-  description: Joi.string().trim().optional(),
+  maintenanceDate: Joi.date().optional(),
+  problem: Joi.string().trim().optional(),
+  repairType: Joi.string().trim().optional(),
+  workshop: Joi.string().trim().optional(),
   cost: Joi.number().min(0).optional(),
   status: Joi.string().valid('Active', 'Closed', 'Completed', 'Cancelled').optional(),
 });

@@ -234,7 +234,14 @@ async function runVerification() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${managerToken}`,
       },
-      body: JSON.stringify({ vehicle: vehicleId, description: 'Brake pad swap', cost: 450 }),
+      body: JSON.stringify({
+        vehicle: vehicleId,
+        problem: 'Brake pads worn out',
+        repairType: 'Replacement',
+        workshop: 'City Garage',
+        cost: 450,
+        description: 'Brake pad swap'
+      }),
     });
     if (badMaintRes.status === 403) {
       console.log('✓ Success: Correctly blocked vehicle from entering maintenance while on active trip (403).');
@@ -277,7 +284,14 @@ async function runVerification() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${managerToken}`,
       },
-      body: JSON.stringify({ vehicle: vehicleId, description: 'Engine oil flush & diagnostics', cost: 1200 }),
+      body: JSON.stringify({
+        vehicle: vehicleId,
+        problem: 'Engine oil dirty',
+        repairType: 'Maintenance',
+        workshop: 'Main Station Workshop',
+        cost: 1200,
+        description: 'Engine oil flush & diagnostics'
+      }),
     });
     if (maintRes.status === 201) {
       console.log('✓ Success: Fleet Manager successfully created maintenance via API (201).');
@@ -352,7 +366,7 @@ async function runVerification() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${managerToken}`,
       },
-      body: JSON.stringify({ status: 'Closed' }),
+      body: JSON.stringify({ status: 'Completed' }),
     });
     if (closeMaintRes.status === 200) {
       console.log('✓ Success: Fleet Manager successfully closed maintenance via API (200).');

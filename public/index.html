@@ -740,6 +740,7 @@
               </div>
             </div>
 
+            <!-- Chart 2: ROI % -->
             <div class="grid-card glass">
               <div class="card-header">
                 <h2>Return on Investment by Vehicle (%)</h2>
@@ -747,6 +748,33 @@
               <div class="chart-mock" id="report-roi-graph" style="height: 240px; display: flex; align-items: center; justify-content: center; position: relative;">
                 <!-- Dynamically populated SVG Bar Chart -->
               </div>
+              <div class="chart-mock" id="chart-roi" style="height: 250px; display: flex; align-items: center; justify-content: center; position: relative;">
+                <!-- Dynamically populated SVG -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Table: Breakdown -->
+          <div class="grid-card glass">
+            <div class="card-header">
+              <h2>Vehicle Metrics Breakdown</h2>
+            </div>
+            <div class="table-container" style="border:none; margin-top: 15px;">
+              <table id="reports-table">
+                <thead>
+                  <tr>
+                    <th>Vehicle</th>
+                    <th>Distance (km)</th>
+                    <th>Fuel (L)</th>
+                    <th>Efficiency (km/L)</th>
+                    <th>Trips</th>
+                    <th>Op. Cost</th>
+                    <th>Est. Revenue</th>
+                    <th>ROI</th>
+                  </tr>
+                </thead>
+                <tbody id="reports-list"></tbody>
+              </table>
             </div>
           </div>
 
