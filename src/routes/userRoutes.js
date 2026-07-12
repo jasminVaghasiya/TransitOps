@@ -1,5 +1,6 @@
 import express from 'express';
 import User from '../models/User.js';
+import Driver from '../models/Driver.js';
 import AuditLog from '../models/AuditLog.js';
 import { protect } from '../middleware/auth.js';
 import { attachAbility, authorize, policyGate } from '../middleware/rbac.js';
@@ -90,7 +91,7 @@ router.get('/audit', authorize('manage', 'User'), async (req, res, next) => {
 router.get('/:id', async (req, res, next) => {
   try {
     const isSelf = String(req.user._id) === String(req.params.id);
-    const isAdmin = req.user.role === 'admin';
+    const isAdmin = req.user.role === 'fleet_manager';
 
     if (!isAdmin && !isSelf) {
       return res.status(403).json({

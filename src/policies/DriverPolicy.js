@@ -3,6 +3,11 @@ import Trip from '../models/Trip.js';
 
 export default class DriverPolicy extends BasePolicy {
   async canCreate(actor, target, req) {
+    if (actor.role === 'driver') {
+      if (req.body.name !== actor.name) {
+        return this.deny('Drivers can only create their own profile', 'PERMISSION_DENIED');
+      }
+    }
     return this.allow();
   }
 

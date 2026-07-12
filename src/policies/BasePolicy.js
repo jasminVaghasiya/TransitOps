@@ -3,7 +3,7 @@ export default class BasePolicy {
    * Helper: Check if user is administrator
    */
   isAdmin(actor) {
-    return actor?.role === 'admin';
+    return false;
   }
 
   /**

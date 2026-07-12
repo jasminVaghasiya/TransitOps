@@ -28,8 +28,8 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['fleet_manager', 'dispatcher', 'safety_officer', 'financial_analyst', 'admin', 'read_only'],
-      default: 'read_only',
+      enum: ['fleet_manager', 'driver', 'safety_officer', 'financial_analyst'],
+      default: 'driver',
     },
     isActive: {
       type: Boolean,

@@ -38,10 +38,10 @@ export const signupSchema = Joi.object({
     }),
 
   role: Joi.string()
-    .valid('read_only', 'admin')
-    .default('read_only')
+    .valid('fleet_manager', 'driver', 'safety_officer', 'financial_analyst')
+    .default('driver')
     .messages({
-      'any.only': 'Role must be either read_only or admin',
+      'any.only': 'Role must be fleet_manager, driver, safety_officer, or financial_analyst',
     }),
 });
 
