@@ -3,297 +3,730 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="TransitOps Transport Operations Platform - Secure Login & Dashboard">
+  <meta name="description" content="TransitOps - Enterprise Transport Management System">
   <title>TransitOps Dashboard</title>
-  <!-- Google Fonts: Outfit & Inter -->
+  <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- Toast Notification System -->
-  <div id="toast-container" class="toast-container"></div>
+  <!-- Toast Notification Box -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
   <!-- ==========================================
-       LOGIN PAGE VIEW
+       LOGIN VIEW SCREEN
        ========================================== -->
   <main id="login-view" class="login-view">
-    <div class="login-card">
+    <div class="login-card glass">
       <div class="login-header">
         <div class="logo">
-          <span class="logo-icon">🚚</span>
+          <i class="fa-solid fa-truck-fast logo-icon"></i>
           <h1>Transit<span>Ops</span></h1>
         </div>
-        <p>Enterprise Fleet Management Platform</p>
+        <p>Enterprise Smart Transport & Logistics Operations</p>
       </div>
 
       <form id="login-form" class="login-form">
         <div class="input-group">
-          <label for="login-email">Email Address</label>
-          <input type="email" id="login-email" required placeholder="name@transitops.com">
+          <input type="email" id="login-email" required placeholder=" ">
+          <label for="login-email"><i class="fa-regular fa-envelope"></i> Email Address</label>
         </div>
         <div class="input-group">
-          <label for="login-password">Password</label>
-          <input type="password" id="login-password" required placeholder="••••••••">
+          <input type="password" id="login-password" required placeholder=" ">
+          <label for="login-password"><i class="fa-solid fa-lock"></i> Password</label>
         </div>
-        <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+        <button type="submit" class="btn btn-primary btn-block ripple-btn">Sign In <i class="fa-solid fa-arrow-right"></i></button>
       </form>
 
       <div class="demo-accounts">
-        <h3>Quick Test Accounts</h3>
-        <p>Select a profile to load pre-seeded credentials:</p>
-        <div class="demo-buttons">
-          <button type="button" class="btn btn-outline demo-btn" data-email="admin@transitops.com">Administrator</button>
+        <h3>Quick Test Role Logins</h3>
+        <p>Select a profile to automatically authenticate:</p>
+        <div class="demo-grid">
+          <button type="button" class="btn btn-outline demo-btn" data-email="admin@transitops.com">Admin</button>
           <button type="button" class="btn btn-outline demo-btn" data-email="manager@transitops.com">Fleet Manager</button>
           <button type="button" class="btn btn-outline demo-btn" data-email="dispatcher@transitops.com">Dispatcher</button>
           <button type="button" class="btn btn-outline demo-btn" data-email="safety@transitops.com">Safety Officer</button>
           <button type="button" class="btn btn-outline demo-btn" data-email="finance@transitops.com">Financial Analyst</button>
-          <button type="button" class="btn btn-outline demo-btn" data-email="auditor@transitops.com">Auditor (Read Only)</button>
+          <button type="button" class="btn btn-outline demo-btn" data-email="auditor@transitops.com">Auditor (Read-Only)</button>
         </div>
       </div>
     </div>
   </main>
 
   <!-- ==========================================
-       DASHBOARD WORKSPACE VIEW
+       ENTERPRISE WORKSPACE LAYOUT
        ========================================== -->
   <div id="app-view" class="app-view hidden">
-    <!-- Sidebar Navigation -->
-    <aside class="sidebar">
+    
+    <!-- Sidebar Left Navigation -->
+    <aside id="sidebar" class="sidebar">
       <div class="sidebar-header">
         <div class="logo">
-          <span class="logo-icon">🚚</span>
+          <i class="fa-solid fa-truck-fast logo-icon"></i>
           <h2>Transit<span>Ops</span></h2>
         </div>
+        <button id="sidebar-collapse-btn" class="sidebar-toggle" aria-label="Collapse sidebar">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
       </div>
 
-      <!-- Current User Profile Card -->
-      <div class="profile-card">
-        <div class="avatar">👤</div>
-        <div class="user-info">
-          <h4 id="user-name">Loading...</h4>
-          <span id="user-role" class="badge">Role</span>
+      <!-- Current Profile Summary -->
+      <div class="sidebar-profile">
+        <div class="avatar-container">
+          <div class="avatar">👤</div>
+          <span class="status-indicator online"></span>
+        </div>
+        <div class="profile-info">
+          <h4 id="user-display-name">Username</h4>
+          <span id="user-display-role" class="badge">Role</span>
         </div>
       </div>
 
       <nav class="sidebar-nav">
         <ul>
-          <li><a href="#" class="nav-link active" data-page="dashboard">📊 Dashboard</a></li>
-          <li><a href="#" class="nav-link" data-page="vehicles" id="nav-vehicles">🚛 Vehicles</a></li>
-          <li><a href="#" class="nav-link" data-page="drivers" id="nav-drivers">🧑‍✈️ Drivers</a></li>
-          <li><a href="#" class="nav-link" data-page="trips" id="nav-trips">🗺️ Trips</a></li>
-          <li><a href="#" class="nav-link" data-page="maintenance" id="nav-maintenance">🔧 Maintenance</a></li>
-          <li><a href="#" class="nav-link" data-page="finance" id="nav-finance">💳 Fuel & Expenses</a></li>
-          <li><a href="#" class="nav-link" data-page="audit" id="nav-audit">📜 Audit Logs</a></li>
+          <li><a href="#" class="nav-link active" data-page="dashboard"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
+          <li><a href="#" class="nav-link" data-page="vehicles" id="nav-vehicles"><i class="fa-solid fa-truck-moving"></i> <span>Vehicles</span></a></li>
+          <li><a href="#" class="nav-link" data-page="drivers" id="nav-drivers"><i class="fa-solid fa-id-card"></i> <span>Drivers</span></a></li>
+          <li><a href="#" class="nav-link" data-page="trips" id="nav-trips"><i class="fa-solid fa-route"></i> <span>Trips</span></a></li>
+          <li><a href="#" class="nav-link" data-page="finance" id="nav-finance"><i class="fa-solid fa-gas-pump"></i> <span>Fuel & Expenses</span></a></li>
+          <li><a href="#" class="nav-link" data-page="maintenance" id="nav-maintenance"><i class="fa-solid fa-screwdriver-wrench"></i> <span>Maintenance</span></a></li>
+          <li><a href="#" class="nav-link" data-page="documents" id="nav-documents"><i class="fa-solid fa-file-invoice"></i> <span>Documents</span></a></li>
+          <li><a href="#" class="nav-link" data-page="reports" id="nav-reports"><i class="fa-solid fa-chart-line"></i> <span>Reports</span></a></li>
+          <li><a href="#" class="nav-link" data-page="audit" id="nav-audit"><i class="fa-solid fa-clock-rotate-left"></i> <span>Audit Logs</span></a></li>
+          <li><a href="#" class="nav-link" data-page="users" id="nav-users"><i class="fa-solid fa-users-gear"></i> <span>Users</span></a></li>
+          <li><a href="#" class="nav-link" data-page="roles" id="nav-roles"><i class="fa-solid fa-user-shield"></i> <span>Roles</span></a></li>
+          <li><a href="#" class="nav-link" data-page="settings" id="nav-settings"><i class="fa-solid fa-sliders"></i> <span>Settings</span></a></li>
         </ul>
       </nav>
 
       <div class="sidebar-footer">
-        <button id="logout-btn" class="btn btn-logout btn-block">🔒 Sign Out</button>
+        <button id="logout-btn" class="btn btn-logout btn-block"><i class="fa-solid fa-door-open"></i> <span>Sign Out</span></button>
       </div>
     </aside>
 
+    <!-- Drawer Overlay (Mobile) -->
+    <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
+
     <!-- Main Content Panel -->
     <main class="main-panel">
-      <header class="panel-header">
-        <h1 id="page-title">Workspace Dashboard</h1>
-        <div class="header-actions">
-          <button id="quick-create-btn" class="btn btn-primary hidden">+ Create Resource</button>
+      <!-- Top Sticky Navbar -->
+      <header class="navbar">
+        <div class="navbar-left">
+          <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Open Menu">
+            <i class="fa-solid fa-bars-staggered"></i>
+          </button>
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Search vehicle logs, invoices, cargo manifests...">
+          </div>
+        </div>
+
+        <div class="navbar-right">
+          <!-- Notification Bell -->
+          <div class="nav-icon-badge" id="notifications-bell">
+            <i class="fa-regular fa-bell"></i>
+            <span class="dot"></span>
+            <!-- Dropdown content -->
+            <div class="nav-dropdown hidden" id="notifications-dropdown">
+              <h3>System Alerts</h3>
+              <div class="notification-list">
+                <div class="notif-item">
+                  <i class="fa-solid fa-triangle-exclamation warning-icon"></i>
+                  <div>
+                    <p>Driver score limit reached</p>
+                    <span>2 mins ago</span>
+                  </div>
+                </div>
+                <div class="notif-item">
+                  <i class="fa-solid fa-circle-check success-icon"></i>
+                  <div>
+                    <p>Trip complete release</p>
+                    <span>15 mins ago</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Language Select -->
+          <div class="language-selector">
+            <i class="fa-solid fa-globe"></i>
+            <select aria-label="Language selection">
+              <option value="en">EN</option>
+              <option value="es">ES</option>
+              <option value="fr">FR</option>
+            </select>
+          </div>
+
+          <!-- Dark Mode Icon -->
+          <button class="theme-toggle" aria-label="Toggle theme mode" id="theme-toggle-btn">
+            <i class="fa-regular fa-moon"></i>
+          </button>
+
+          <!-- Profile Dropper -->
+          <div class="nav-profile" id="nav-profile-menu">
+            <span class="avatar">👤</span>
+            <div class="profile-dropdown hidden" id="profile-dropdown-content">
+              <a href="#" class="profile-link" data-page="settings"><i class="fa-solid fa-user-astronaut"></i> My Profile</a>
+              <a href="#" class="profile-link" data-page="settings"><i class="fa-solid fa-gear"></i> Settings</a>
+              <hr>
+              <a href="#" id="profile-signout"><i class="fa-solid fa-right-from-bracket"></i> Sign Out</a>
+            </div>
+          </div>
         </div>
       </header>
 
-      <!-- Dashboard View Content -->
-      <section id="page-dashboard" class="page-content">
-        <!-- Stats Row -->
-        <div class="stats-grid">
-          <div class="stat-card">
-            <h3>Active Vehicles</h3>
-            <p class="stat-value" id="stat-vehicles">-</p>
-          </div>
-          <div class="stat-card">
-            <h3>Active Drivers</h3>
-            <p class="stat-value" id="stat-drivers">-</p>
-          </div>
-          <div class="stat-card">
-            <h3>Pending Trips</h3>
-            <p class="stat-value" id="stat-trips">-</p>
-          </div>
-          <div class="stat-card">
-            <h3>Active Repairs</h3>
-            <p class="stat-value" id="stat-maint">-</p>
-          </div>
-        </div>
+      <!-- Main Workspace Views -->
+      <div class="workspace-body">
+        
+        <!-- ==========================================
+             PAGE: DASHBOARD
+             ========================================== -->
+        <section id="page-dashboard" class="page-content">
+          <!-- Statistics Cards Grid -->
+          <div class="stats-grid">
+            <div class="stat-card glass hover-lift">
+              <div class="stat-header">
+                <span class="stat-title">Total Vehicles</span>
+                <i class="fa-solid fa-truck-moving accent-icon"></i>
+              </div>
+              <div class="stat-main">
+                <span class="stat-value" id="dash-total-vehicles">-</span>
+                <span class="stat-trend green"><i class="fa-solid fa-arrow-trend-up"></i> +12%</span>
+              </div>
+              <div class="sparkline-wrapper">
+                <svg viewBox="0 0 100 30" class="sparkline">
+                  <path d="M0,25 Q15,5 30,20 T60,10 T90,15 T100,5" fill="none" stroke="url(#accentGrad)" stroke-width="2"></path>
+                </svg>
+              </div>
+            </div>
 
-        <div class="dashboard-widgets-grid">
-          <!-- Overview -->
-          <div class="widget-card">
-            <h2>System Overview</h2>
-            <div class="welcome-box">
-              <h3>Welcome back, <span id="welcome-user">User</span>!</h3>
-              <p>You have logged in with <strong id="welcome-role">Role</strong> authorization scope. Your view displays modules tailored to your operational permissions.</p>
+            <div class="stat-card glass hover-lift">
+              <div class="stat-header">
+                <span class="stat-title">Available Vehicles</span>
+                <i class="fa-solid fa-circle-check green-icon"></i>
+              </div>
+              <div class="stat-main">
+                <span class="stat-value" id="dash-avail-vehicles">-</span>
+                <span class="stat-trend green"><i class="fa-solid fa-circle"></i> Good</span>
+              </div>
+              <div class="sparkline-wrapper">
+                <svg viewBox="0 0 100 30" class="sparkline">
+                  <path d="M0,20 Q20,10 40,25 T80,15 T100,10" fill="none" stroke="#10B981" stroke-width="2"></path>
+                </svg>
+              </div>
+            </div>
+
+            <div class="stat-card glass hover-lift">
+              <div class="stat-header">
+                <span class="stat-title">Registered Drivers</span>
+                <i class="fa-solid fa-users blue-icon"></i>
+              </div>
+              <div class="stat-main">
+                <span class="stat-value" id="dash-total-drivers">-</span>
+                <span class="stat-trend green"><i class="fa-solid fa-arrow-trend-up"></i> +4%</span>
+              </div>
+              <div class="sparkline-wrapper">
+                <svg viewBox="0 0 100 30" class="sparkline">
+                  <path d="M0,15 Q30,25 60,10 T90,20 T100,15" fill="none" stroke="#60A5FA" stroke-width="2"></path>
+                </svg>
+              </div>
+            </div>
+
+            <div class="stat-card glass hover-lift">
+              <div class="stat-header">
+                <span class="stat-title">Trips Scheduled</span>
+                <i class="fa-solid fa-route purple-icon"></i>
+              </div>
+              <div class="stat-main">
+                <span class="stat-value" id="dash-total-trips">-</span>
+                <span class="stat-trend green"><i class="fa-solid fa-arrow-trend-up"></i> +8%</span>
+              </div>
+              <div class="sparkline-wrapper">
+                <svg viewBox="0 0 100 30" class="sparkline">
+                  <path d="M0,25 Q20,5 50,15 T80,10 T100,20" fill="none" stroke="#8B5CF6" stroke-width="2"></path>
+                </svg>
+              </div>
             </div>
           </div>
-          <!-- Audit Summary -->
-          <div class="widget-card">
-            <h2>Recent Activity</h2>
-            <div id="recent-logs" class="recent-logs">
-              <p class="empty-message">No recent logs loaded</p>
+
+          <!-- Secondary Grid -->
+          <div class="dashboard-grid">
+            <div class="grid-card glass">
+              <div class="card-header">
+                <h2>TransitOps Operations Center</h2>
+              </div>
+              <div class="welcome-banner">
+                <h3>Welcome back, <span id="welcome-profile-name">User</span>!</h3>
+                <p>Role: <strong id="welcome-profile-role" class="badge">Scope</strong></p>
+                <p class="desc">TransitOps matches declarative RBAC parameters dynamically. Controls that violate your permissions will be automatically hidden from the table listings and modals.</p>
+              </div>
+            </div>
+
+            <div class="grid-card glass">
+              <div class="card-header">
+                <h2>Real-Time Fleet Status</h2>
+              </div>
+              <div class="fleet-pie-sim">
+                <div class="pie-chart-mock">
+                  <div class="pie-ring"></div>
+                  <span class="inner-value">84%</span>
+                </div>
+                <div class="legend">
+                  <p><i class="fa-solid fa-circle status-Available"></i> Available (65%)</p>
+                  <p><i class="fa-solid fa-circle status-On-Trip"></i> Active Trips (25%)</p>
+                  <p><i class="fa-solid fa-circle status-In-Shop"></i> In Shop (10%)</p>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- Dynamic Data List Sections -->
-      <section id="page-vehicles" class="page-content hidden">
-        <div class="table-container">
-          <table id="vehicles-table">
-            <thead>
-              <tr>
-                <th>Registration</th>
-                <th>Make & Model</th>
-                <th>Capacity (Kg)</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="vehicles-list"></tbody>
-          </table>
-        </div>
-      </section>
+        <!-- ==========================================
+             PAGE: VEHICLES
+             ========================================== -->
+        <section id="page-vehicles" class="page-content hidden">
+          <div class="control-row">
+            <div class="filters-left">
+              <input type="text" class="input-filter" id="vehicles-search" placeholder="Search vehicle registration...">
+              <select class="input-select" id="vehicles-filter-status" aria-label="Filter by Status">
+                <option value="">All Statuses</option>
+                <option value="Available">Available</option>
+                <option value="On Trip">On Trip</option>
+                <option value="In Shop">In Shop</option>
+                <option value="Retired">Retired</option>
+              </select>
+            </div>
+            <button class="btn btn-outline" id="btn-export-vehicles"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+          </div>
 
-      <section id="page-drivers" class="page-content hidden">
-        <div class="table-container">
-          <table id="drivers-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>License</th>
-                <th>Expiry</th>
-                <th>Phone</th>
-                <th>Safety Score</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="drivers-list"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section id="page-trips" class="page-content hidden">
-        <div class="table-container">
-          <table id="trips-table">
-            <thead>
-              <tr>
-                <th>Vehicle</th>
-                <th>Driver</th>
-                <th>Route</th>
-                <th>Cargo Weight</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="trips-list"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section id="page-maintenance" class="page-content hidden">
-        <div class="table-container">
-          <table id="maintenance-table">
-            <thead>
-              <tr>
-                <th>Vehicle</th>
-                <th>Description</th>
-                <th>Cost</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="maintenance-list"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section id="page-finance" class="page-content hidden">
-        <div class="tabs">
-          <button class="tab-btn active" data-tab="expenses">Expenses</button>
-          <button class="tab-btn" data-tab="fuel">Fuel Logs</button>
-        </div>
-
-        <div id="tab-content-expenses" class="tab-content">
-          <div class="table-container">
-            <table id="expenses-table">
+          <div class="table-container glass">
+            <table id="vehicles-table">
               <thead>
                 <tr>
-                  <th>Type</th>
-                  <th>Amount</th>
-                  <th>Date</th>
-                  <th>Linked Asset</th>
+                  <th>Vehicle Number</th>
+                  <th>Make & Model</th>
+                  <th>Capacity (Kg)</th>
+                  <th>Insurance Status</th>
+                  <th>Driver Assignee</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
-              <tbody id="expenses-list"></tbody>
+              <tbody id="vehicles-list"></tbody>
             </table>
           </div>
-        </div>
+        </section>
 
-        <div id="tab-content-fuel" class="tab-content hidden">
-          <div class="table-container">
-            <table id="fuel-table">
+        <!-- ==========================================
+             PAGE: DRIVERS
+             ========================================== -->
+        <section id="page-drivers" class="page-content hidden">
+          <div class="control-row">
+            <div class="filters-left">
+              <input type="text" class="input-filter" id="drivers-search" placeholder="Search drivers by name...">
+              <select class="input-select" id="drivers-filter-status" aria-label="Filter by driver status">
+                <option value="">All Statuses</option>
+                <option value="Available">Available</option>
+                <option value="On Trip">On Trip</option>
+                <option value="Suspended">Suspended</option>
+                <option value="Off Duty">Off Duty</option>
+              </select>
+            </div>
+            <button class="btn btn-outline" id="btn-export-drivers"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+          </div>
+
+          <div class="drivers-grid" id="drivers-list"></div>
+        </section>
+
+        <!-- ==========================================
+             PAGE: TRIPS
+             ========================================== -->
+        <section id="page-trips" class="page-content hidden">
+          <div class="control-row">
+            <div class="filters-left">
+              <input type="text" class="input-filter" id="trips-search" placeholder="Search source or destination...">
+              <select class="input-select" id="trips-filter-status" aria-label="Filter by Trip status">
+                <option value="">All Statuses</option>
+                <option value="Draft">Draft</option>
+                <option value="Dispatched">Dispatched</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="trips-list-container" id="trips-list"></div>
+        </section>
+
+        <!-- ==========================================
+             PAGE: FUEL & EXPENSES
+             ========================================== -->
+        <section id="page-finance" class="page-content hidden">
+          <div class="tabs">
+            <button class="tab-btn active" data-tab="expenses">Expenses</button>
+            <button class="tab-btn" data-tab="fuel">Fuel Fill-Ups</button>
+          </div>
+
+          <div id="tab-content-expenses" class="tab-content">
+            <div class="table-container glass">
+              <table id="expenses-table">
+                <thead>
+                  <tr>
+                    <th>Expense Type</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                    <th>Linked Vehicle</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="expenses-list"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="tab-content-fuel" class="tab-content hidden">
+            <div class="table-container glass">
+              <table id="fuel-table">
+                <thead>
+                  <tr>
+                    <th>Vehicle</th>
+                    <th>Fill Date</th>
+                    <th>Fuel Liters</th>
+                    <th>Cost</th>
+                    <th>Odometer Reading</th>
+                  </tr>
+                </thead>
+                <tbody id="fuel-list"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==========================================
+             PAGE: MAINTENANCE
+             ========================================== -->
+        <section id="page-maintenance" class="page-content hidden">
+          <div class="dashboard-grid">
+            <div class="grid-card glass">
+              <div class="card-header">
+                <h2>Active Workshop Records</h2>
+              </div>
+              <div class="table-container" style="border:none;">
+                <table id="maintenance-table">
+                  <thead>
+                    <tr>
+                      <th>Vehicle Registration</th>
+                      <th>Repair Description</th>
+                      <th>Logged Cost</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="maintenance-list"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Maintenance Schedule Mock Calendar -->
+            <div class="grid-card glass">
+              <div class="card-header">
+                <h2>Upcoming Fleet Services</h2>
+              </div>
+              <div class="maintenance-calendar">
+                <div class="cal-day">
+                  <span class="day-num">14</span>
+                  <div class="cal-event warning">
+                    <p>TX-890-GP Break Pads Check</p>
+                  </div>
+                </div>
+                <div class="cal-day">
+                  <span class="day-num">19</span>
+                  <div class="cal-event danger">
+                    <p>Volvo FH16 Engine Tune</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==========================================
+             PAGE: DOCUMENTS
+             ========================================== -->
+        <section id="page-documents" class="page-content hidden">
+          <div class="documents-grid">
+            <div class="doc-card glass">
+              <i class="fa-regular fa-file-pdf doc-icon"></i>
+              <h3>Trip_Manifest_5862.pdf</h3>
+              <p>Vehicle: TX-890-GP | Driver: John Doe</p>
+              <button class="btn btn-outline btn-block"><i class="fa-solid fa-download"></i> Download</button>
+            </div>
+            <div class="doc-card glass">
+              <i class="fa-regular fa-file-pdf doc-icon"></i>
+              <h3>Fuel_Invoice_July.pdf</h3>
+              <p>Finance Analyst | Total $1,280</p>
+              <button class="btn btn-outline btn-block"><i class="fa-solid fa-download"></i> Download</button>
+            </div>
+            <div class="doc-card glass">
+              <i class="fa-regular fa-file-word doc-icon"></i>
+              <h3>Maintenance_Spec_Volvo.docx</h3>
+              <p>Fleet Manager | Garage Notes</p>
+              <button class="btn btn-outline btn-block"><i class="fa-solid fa-download"></i> Download</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==========================================
+             PAGE: REPORTS
+             ========================================== -->
+        <section id="page-reports" class="page-content hidden">
+          <div class="control-row">
+            <button class="btn btn-primary" id="btn-download-pdf"><i class="fa-solid fa-file-pdf"></i> Download PDF Report</button>
+            <button class="btn btn-outline" id="btn-download-excel"><i class="fa-solid fa-file-excel"></i> Download Excel</button>
+          </div>
+          <div class="dashboard-grid">
+            <div class="grid-card glass">
+              <div class="card-header">
+                <h2>Monthly Operations Cost Breakdown</h2>
+              </div>
+              <div class="chart-mock">
+                <!-- SVG bar chart -->
+                <svg viewBox="0 0 400 200" style="width: 100%; height: 100%;">
+                  <!-- Background grid -->
+                  <line x1="40" y1="20" x2="380" y2="20" stroke="rgba(255,255,255,0.05)"></line>
+                  <line x1="40" y1="70" x2="380" y2="70" stroke="rgba(255,255,255,0.05)"></line>
+                  <line x1="40" y1="120" x2="380" y2="120" stroke="rgba(255,255,255,0.05)"></line>
+                  <line x1="40" y1="170" x2="380" y2="170" stroke="rgba(255,255,255,0.1)"></line>
+                  
+                  <!-- Bar 1 -->
+                  <rect x="70" y="80" width="30" height="90" fill="#7C3AED" rx="4"></rect>
+                  <text x="75" y="190" fill="#94A3B8" font-size="10">May</text>
+                  
+                  <!-- Bar 2 -->
+                  <rect x="150" y="40" width="30" height="130" fill="#8B5CF6" rx="4"></rect>
+                  <text x="155" y="190" fill="#94A3B8" font-size="10">Jun</text>
+
+                  <!-- Bar 3 -->
+                  <rect x="230" y="60" width="30" height="110" fill="#10B981" rx="4"></rect>
+                  <text x="235" y="190" fill="#94A3B8" font-size="10">Jul</text>
+
+                  <!-- Bar 4 -->
+                  <rect x="310" y="20" width="30" height="150" fill="#F59E0B" rx="4"></rect>
+                  <text x="315" y="190" fill="#94A3B8" font-size="10">Aug</text>
+                </svg>
+              </div>
+            </div>
+
+            <div class="grid-card glass">
+              <div class="card-header">
+                <h2>Total Active Miles Traveled</h2>
+              </div>
+              <div class="chart-mock">
+                <!-- SVG line chart -->
+                <svg viewBox="0 0 400 200" style="width: 100%; height: 100%;">
+                  <path d="M40,160 L120,120 L200,80 L280,130 L360,40" fill="none" stroke="#7C3AED" stroke-width="3"></path>
+                  <circle cx="120" cy="120" r="4" fill="#7C3AED"></circle>
+                  <circle cx="200" cy="80" r="4" fill="#7C3AED"></circle>
+                  <circle cx="280" cy="130" r="4" fill="#7C3AED"></circle>
+                  <circle cx="360" cy="40" r="4" fill="#7C3AED"></circle>
+                  <line x1="40" y1="170" x2="380" y2="170" stroke="rgba(255,255,255,0.1)"></line>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==========================================
+             PAGE: AUDIT LOGS
+             ========================================== -->
+        <section id="page-audit" class="page-content hidden">
+          <div class="table-container glass">
+            <table id="audit-table">
               <thead>
                 <tr>
-                  <th>Vehicle</th>
-                  <th>Date</th>
-                  <th>Fuel Liters</th>
-                  <th>Cost</th>
-                  <th>Odometer Reading</th>
+                  <th>Timestamp</th>
+                  <th>Operator</th>
+                  <th>Action</th>
+                  <th>Module</th>
+                  <th>Record ID</th>
+                  <th>IP Address</th>
                 </tr>
               </thead>
-              <tbody id="fuel-list"></tbody>
+              <tbody id="audit-list"></tbody>
             </table>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section id="page-audit" class="page-content hidden">
-        <div class="table-container">
-          <table id="audit-table">
-            <thead>
-              <tr>
-                <th>Timestamp</th>
-                <th>Operator</th>
-                <th>Action</th>
-                <th>Module</th>
-                <th>Record ID</th>
-                <th>IP Address</th>
-              </tr>
-            </thead>
-            <tbody id="audit-list"></tbody>
-          </table>
-        </div>
-      </section>
+        <!-- ==========================================
+             PAGE: USERS
+             ========================================== -->
+        <section id="page-users" class="page-content hidden">
+          <div class="table-container glass">
+            <table id="users-table">
+              <thead>
+                <tr>
+                  <th>User Avatar</th>
+                  <th>Full Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Account Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="users-list"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ==========================================
+             PAGE: ROLES
+             ========================================== -->
+        <section id="page-roles" class="page-content hidden">
+          <div class="role-matrix-container glass">
+            <h3>Declarative RBAC Role Permission Matrix</h3>
+            <p>Admin only. View security scope allocations across roles:</p>
+            
+            <div class="matrix-scroll">
+              <table class="role-matrix-table">
+                <thead>
+                  <tr>
+                    <th>Role Ability Scope</th>
+                    <th>Admin</th>
+                    <th>Fleet Manager</th>
+                    <th>Dispatcher</th>
+                    <th>Safety Officer</th>
+                    <th>Financial Analyst</th>
+                    <th>Auditor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Manage Users</strong></td>
+                    <td><input type="checkbox" checked disabled></td>
+                    <td><input type="checkbox" disabled></td>
+                    <td><input type="checkbox" disabled></td>
+                    <td><input type="checkbox" disabled></td>
+                    <td><input type="checkbox" disabled></td>
+                    <td><input type="checkbox" disabled></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Modify Vehicles</strong></td>
+                    <td><input type="checkbox" checked disabled></td>
+                    <td><input type="checkbox" checked disabled></td>
+                    <td><input type="checkbox" disabled></td>
+                    <td><input type="checkbox" disabled></td>
+                    <td><input type="checkbox" disabled></td>
+                    <td><input type="checkbox" disabled></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Schedule Trips</strong></td>
+                    <td><input type="checkbox" checked disabled></td>
+                    <td><input type="checkbox" disabled></td>
+                    <td><input type="checkbox" checked disabled></td>
+                    <td><input type="checkbox" disabled></td>
+                    <td><input type="checkbox" disabled></td>
+                    <td><input type="checkbox" disabled></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Approve Invoices</strong></td>
+                    <td><input type="checkbox" checked disabled></td>
+                    <td><input type="checkbox" disabled></td>
+                    <td><input type="checkbox" disabled></td>
+                    <td><input type="checkbox" disabled></td>
+                    <td><input type="checkbox" checked disabled></td>
+                    <td><input type="checkbox" disabled></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==========================================
+             PAGE: SETTINGS
+             ========================================== -->
+        <section id="page-settings" class="page-content hidden">
+          <div class="dashboard-grid">
+            <div class="grid-card glass">
+              <div class="card-header">
+                <h2>Company Profile Info</h2>
+              </div>
+              <form id="settings-profile-form">
+                <div class="input-group">
+                  <input type="text" id="set-company-name" required value="TransitOps Logistics Corp" placeholder=" ">
+                  <label for="set-company-name">Logistics Company Name</label>
+                </div>
+                <div class="input-group">
+                  <input type="email" id="set-company-email" required value="admin@transitops.com" placeholder=" ">
+                  <label for="set-company-email">Corporate Contact Email</label>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+              </form>
+            </div>
+
+            <div class="grid-card glass">
+              <div class="card-header">
+                <h2>Security Credentials</h2>
+              </div>
+              <form id="settings-password-form">
+                <div class="input-group">
+                  <input type="password" id="set-old-pass" required placeholder=" ">
+                  <label for="set-old-pass">Current Password</label>
+                </div>
+                <div class="input-group">
+                  <input type="password" id="set-new-pass" required placeholder=" ">
+                  <label for="set-new-pass">New Secure Password</label>
+                </div>
+                <button type="submit" class="btn btn-logout">Change Password</button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+      </div>
     </main>
   </div>
 
   <!-- ==========================================
-       DYNAMIC MODAL FOR CREATION FORMS
+       FLOATING ACTION BUTTON (FAB)
        ========================================== -->
-  <div id="modal-container" class="modal-container hidden">
-    <div class="modal-card">
+  <button id="floating-action-btn" class="floating-action-btn hidden" aria-label="Quick Create Resource">
+    <i class="fa-solid fa-plus"></i>
+  </button>
+
+  <!-- ==========================================
+       DYNAMIC DIALOG MODAL DOCK
+       ========================================== -->
+  <div id="modal-container" class="modal-container hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card glass">
       <header class="modal-header">
         <h2 id="modal-title">Create Resource</h2>
-        <button id="modal-close" class="modal-close-btn">&times;</button>
+        <button id="modal-close" class="modal-close-btn" aria-label="Close modal">&times;</button>
       </header>
       <div id="modal-body" class="modal-body"></div>
     </div>
   </div>
 
-  <!-- JS Code Scripts -->
-  <script src="js/app.js"></script>
+  <!-- SVG Gradient definition for Sparklines -->
+  <svg style="width:0; height:0; position:absolute;">
+    <defs>
+      <linearGradient id="accentGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#7C3AED"></stop>
+        <stop offset="100%" stop-color="#1E1B4B"></stop>
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <!-- Scripts -->
+  <script src="script.js"></script>
 </body>
 </html>
