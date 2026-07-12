@@ -85,11 +85,18 @@ router.post(
  */
 router.get('/', authorize('read', 'Maintenance'), async (req, res, next) => {
   try {
-    const { page = 1, limit = 10, sort = '-createdAt', status, vehicle } = req.query;
+    const { page = 1, limit = 10, sort = '-createdAt', status, vehicle, search } = req.query;
 
     const query = { isDeleted: { $ne: true } };
     if (status) query.status = status;
     if (vehicle) query.vehicle = vehicle;
+
+    if (search) {
+      query.$or = [
+        { description: { $regex: search, $options: 'i' } },
+        { maintenanceType: { $regex: search, $options: 'i' } },
+      ];
+    }
 
     const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
 

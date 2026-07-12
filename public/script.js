@@ -1142,10 +1142,10 @@ async function loadDrivers() {
 
   try {
     const searchVal = document.getElementById('drivers-search')?.value || '';
-    let url = '/api/drivers';
-    if (searchVal) {
-      url += `?search=${encodeURIComponent(searchVal)}`;
-    }
+    const statusVal = document.getElementById('drivers-filter-status')?.value || '';
+    let url = '/api/drivers?limit=100';
+    if (searchVal) url += `&search=${encodeURIComponent(searchVal)}`;
+    if (statusVal) url += `&status=${encodeURIComponent(statusVal)}`;
     const res = await fetchAPI(url);
     container.innerHTML = '';
 
@@ -1397,7 +1397,11 @@ async function loadTrips() {
   container.innerHTML = '<div class="empty-message" style="grid-column: 1/-1;">Loading Trips...</div>';
 
   try {
-    const res = await fetchAPI('/api/trips');
+    const searchVal = document.getElementById('trips-search')?.value || '';
+    const statusVal = document.getElementById('trips-filter-status')?.value || '';
+
+    let url = `/api/trips?limit=100&search=${encodeURIComponent(searchVal)}&status=${statusVal}`;
+    const res = await fetchAPI(url);
     container.innerHTML = '';
 
     if (res.data.trips.length === 0) {
@@ -1806,7 +1810,12 @@ async function loadExpenses() {
   container.innerHTML = '<tr><td colspan="7" class="empty-message">Loading Invoices...</td></tr>';
 
   try {
-    const res = await fetchAPI('/api/expenses');
+    const searchVal = document.getElementById('expenses-search')?.value || '';
+    const statusVal = document.getElementById('expenses-filter-status')?.value || '';
+    let url = '/api/expenses?limit=100';
+    if (searchVal) url += `&search=${encodeURIComponent(searchVal)}`;
+    if (statusVal) url += `&status=${encodeURIComponent(statusVal)}`;
+    const res = await fetchAPI(url);
     container.innerHTML = '';
 
     if (res.data.expenses.length === 0) {
@@ -1884,7 +1893,12 @@ async function loadMaintenance() {
   container.innerHTML = '<tr><td colspan="5" class="empty-message">Loading Repairs...</td></tr>';
 
   try {
-    const res = await fetchAPI('/api/maintenance');
+    const searchVal = document.getElementById('maintenance-search')?.value || '';
+    const statusVal = document.getElementById('maintenance-filter-status')?.value || '';
+    let url = '/api/maintenance?limit=100';
+    if (searchVal) url += `&search=${encodeURIComponent(searchVal)}`;
+    if (statusVal) url += `&status=${encodeURIComponent(statusVal)}`;
+    const res = await fetchAPI(url);
     container.innerHTML = '';
 
     if (res.data.logs.length === 0) {
@@ -2732,11 +2746,64 @@ function renderFinanceForm() {
 }
 
 // ==========================================
-// MOCKUP DRIVERS INTERACTION HANDLERS
+// FILTER EVENT LISTENERS (ALL PAGES)
 // ==========================================
+
+// Dashboard filters
+let dashFilterTimeout;
+const dashFilterInputs = ['dash-filter-type', 'dash-filter-region', 'dash-filter-status'];
+dashFilterInputs.forEach(id => {
+  document.getElementById(id)?.addEventListener('change', () => {
+    clearTimeout(dashFilterTimeout);
+    dashFilterTimeout = setTimeout(loadDashboardStats, 150);
+  });
+});
+
+// Vehicles filters
+document.getElementById('vehicles-search')?.addEventListener('input', () => {
+  clearTimeout(window._vehicleSearchTimeout);
+  window._vehicleSearchTimeout = setTimeout(loadVehicles, 250);
+});
+document.getElementById('vehicles-filter-status')?.addEventListener('change', () => {
+  loadVehicles();
+});
+
+// Drivers filters
 document.getElementById('drivers-search')?.addEventListener('input', () => {
   loadDrivers();
 });
+document.getElementById('drivers-filter-status')?.addEventListener('change', () => {
+  loadDrivers();
+});
+
+// Trips filters
+let tripSearchTimeout;
+document.getElementById('trips-search')?.addEventListener('input', () => {
+  clearTimeout(tripSearchTimeout);
+  tripSearchTimeout = setTimeout(loadTrips, 250);
+});
+document.getElementById('trips-filter-status')?.addEventListener('change', () => {
+  loadTrips();
+});
+
+// Expenses filters
+document.getElementById('expenses-search')?.addEventListener('input', () => {
+  clearTimeout(window._expenseSearchTimeout);
+  window._expenseSearchTimeout = setTimeout(loadExpenses, 250);
+});
+document.getElementById('expenses-filter-status')?.addEventListener('change', () => {
+  loadExpenses();
+});
+
+// Maintenance filters
+document.getElementById('maintenance-search')?.addEventListener('input', () => {
+  clearTimeout(window._maintSearchTimeout);
+  window._maintSearchTimeout = setTimeout(loadMaintenance, 250);
+});
+document.getElementById('maintenance-filter-status')?.addEventListener('change', () => {
+  loadMaintenance();
+});
+
 
 document.getElementById('btn-add-driver-mockup')?.addEventListener('click', () => {
   modalContainer.classList.remove('hidden');

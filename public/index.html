@@ -213,7 +213,7 @@
           <li><a href="#" class="nav-link" data-page="maintenance" id="nav-maintenance"><i class="fa-solid fa-screwdriver-wrench"></i> <span>Maintenance</span></a></li>
           <li><a href="#" class="nav-link" data-page="complaints" id="nav-complaints"><i class="fa-solid fa-triangle-exclamation"></i> <span>Complaints</span></a></li>
           <li><a href="#" class="nav-link" data-page="reports" id="nav-reports"><i class="fa-solid fa-chart-line"></i> <span>Reports</span></a></li>
-          <li><a href="#" class="nav-link" data-page="settings" id="nav-settings"><i class="fa-solid fa-sliders"></i> <span>Settings</span></a></li>
+          
         </ul>
       </nav>
 
@@ -503,7 +503,15 @@
 
           <div class="control-row">
             <div class="filters-left">
-              <input type="text" class="input-filter" id="drivers-search" placeholder="Search...">
+              <input type="text" class="input-filter" id="drivers-search" placeholder="Search name, license, phone...">
+              <select class="input-select" id="drivers-filter-status" aria-label="Filter by Driver Status">
+                <option value="">All Statuses</option>
+                <option value="Available">Available</option>
+                <option value="On Trip">On Trip</option>
+                <option value="Off Duty">Off Duty</option>
+                <option value="On Leave">On Leave</option>
+                <option value="Suspended">Suspended</option>
+              </select>
             </div>
             <div class="actions-right">
               <button class="btn btn-outline" id="btn-export-drivers"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
@@ -568,6 +576,17 @@
              PAGE: FUEL & EXPENSES
              ========================================== -->
         <section id="page-finance" class="page-content hidden">
+          <div class="control-row" style="margin-bottom: 16px;">
+            <div class="filters-left">
+              <input type="text" class="input-filter" id="expenses-search" placeholder="Search expense type, description...">
+              <select class="input-select" id="expenses-filter-status" aria-label="Filter Expense Status">
+                <option value="">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+            </div>
+          </div>
           <div class="tabs">
             <button class="tab-btn active" data-tab="expenses">Expenses</button>
             <button class="tab-btn" data-tab="fuel">Fuel Fill-Ups</button>
@@ -619,10 +638,21 @@
              PAGE: MAINTENANCE
              ========================================== -->
         <section id="page-maintenance" class="page-content hidden">
+          <div class="control-row" style="margin-bottom: 16px;">
+            <div class="filters-left">
+              <input type="text" class="input-filter" id="maintenance-search" placeholder="Search vehicle, description...">
+              <select class="input-select" id="maintenance-filter-status" aria-label="Filter Maintenance Status">
+                <option value="">All Statuses</option>
+                <option value="Active">Active</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+            </div>
+          </div>
           <div class="dashboard-grid">
             <div class="grid-card glass" style="grid-column: span 2;">
               <div class="card-header">
-                <h2>Active Workshop Records</h2>
+                <h2>Workshop Records</h2>
               </div>
               <div class="table-container" style="border:none;">
                 <table id="maintenance-table">
