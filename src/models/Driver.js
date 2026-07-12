@@ -26,7 +26,7 @@ const driverSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['Available', 'On Trip', 'Suspended', 'Off Duty'],
+      enum: ['Available', 'On Trip', 'Suspended', 'Off Duty', 'Fired', 'On Leave'],
       default: 'Available',
     },
     safetyScore: {
@@ -34,6 +34,32 @@ const driverSchema = new mongoose.Schema(
       min: [0, 'Safety score cannot be below 0'],
       max: [100, 'Safety score cannot exceed 100'],
       default: 100,
+    },
+    licenseCategory: {
+      type: String,
+      enum: ['LMV', 'HMV'],
+      default: 'LMV',
+    },
+    tripCompletionRate: {
+      type: Number,
+      min: [0, 'Trip completion rate cannot be below 0'],
+      max: [100, 'Trip completion rate cannot exceed 100'],
+      default: 100,
+    },
+    leaveUntil: {
+      type: Date,
+    },
+    leaveStart: {
+      type: Date,
+    },
+    leaveDays: {
+      type: Number,
+    },
+    leaveReason: {
+      type: String,
+    },
+    photo: {
+      type: String,
     },
     isDeleted: {
       type: Boolean,

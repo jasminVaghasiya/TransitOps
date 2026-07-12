@@ -25,8 +25,8 @@ export default class TripPolicy extends BasePolicy {
       return this.deny('Driver not found', 'DRIVER_NOT_FOUND');
     }
 
-    if (driver.status === 'Suspended') {
-      return this.deny('Cannot assign a suspended driver to a trip', 'DRIVER_SUSPENDED');
+    if (driver.status === 'Suspended' || driver.status === 'Fired' || driver.status === 'On Leave') {
+      return this.deny(`Cannot assign a driver with status '${driver.status}' to a trip`, 'DRIVER_UNAVAILABLE');
     }
 
     if (driver.isLicenseExpired) {
@@ -64,7 +64,7 @@ export default class TripPolicy extends BasePolicy {
 
       const driver = await Driver.findById(dId);
       if (!driver) return this.deny('Driver not found', 'DRIVER_NOT_FOUND');
-      if (driver.status === 'Suspended') return this.deny('Cannot assign a suspended driver', 'DRIVER_SUSPENDED');
+      if (driver.status === 'Suspended' || driver.status === 'Fired' || driver.status === 'On Leave') return this.deny(`Cannot assign a driver with status '${driver.status}'`, 'DRIVER_UNAVAILABLE');
       if (driver.isLicenseExpired) return this.deny('Cannot assign a driver with an expired license', 'DRIVER_LICENSE_EXPIRED');
 
       if (weight > vehicle.capacityKg) {

@@ -22,8 +22,15 @@ export const driverSchema = Joi.object({
   licenseExpiry: Joi.date().required(),
   phone: Joi.string().trim().pattern(/^\+?[1-9]\d{1,14}$/).required()
     .messages({ 'string.pattern.base': 'Phone must be a valid E.164 international format (+1234567890)' }),
-  status: Joi.string().valid('Available', 'On Trip', 'Suspended', 'Off Duty').default('Available'),
+  status: Joi.string().valid('Available', 'On Trip', 'Suspended', 'Off Duty', 'Fired', 'On Leave').default('Available'),
   safetyScore: Joi.number().min(0).max(100).default(100),
+  licenseCategory: Joi.string().valid('LMV', 'HMV').default('LMV'),
+  tripCompletionRate: Joi.number().min(0).max(100).default(100),
+  leaveUntil: Joi.date().allow(null).optional(),
+  leaveStart: Joi.date().allow(null).optional(),
+  leaveDays: Joi.number().min(1).allow(null).optional(),
+  leaveReason: Joi.string().allow('', null).optional(),
+  photo: Joi.string().allow('', null).optional(),
 });
 
 export const tripSchema = Joi.object({
@@ -84,8 +91,15 @@ export const updateDriverSchema = Joi.object({
   licenseNumber: Joi.string().trim().uppercase().optional(),
   licenseExpiry: Joi.date().optional(),
   phone: Joi.string().trim().pattern(/^\+?[1-9]\d{1,14}$/).optional(),
-  status: Joi.string().valid('Available', 'On Trip', 'Suspended', 'Off Duty').optional(),
+  status: Joi.string().valid('Available', 'On Trip', 'Suspended', 'Off Duty', 'Fired', 'On Leave').optional(),
   safetyScore: Joi.number().min(0).max(100).optional(),
+  licenseCategory: Joi.string().valid('LMV', 'HMV').optional(),
+  tripCompletionRate: Joi.number().min(0).max(100).optional(),
+  leaveUntil: Joi.date().allow(null).optional(),
+  leaveStart: Joi.date().allow(null).optional(),
+  leaveDays: Joi.number().min(1).allow(null).optional(),
+  leaveReason: Joi.string().allow('', null).optional(),
+  photo: Joi.string().allow('', null).optional(),
 });
 
 export const updateTripSchema = Joi.object({

@@ -1,0 +1,8 @@
+PORT=5000
+MONGODB_URI=mongodb+srv://jemin:jemin@cluster0.nbncz2g.mongodb.net/project
+JWT_ACCESS_SECRET=your_super_secret_access_token_key_change_me_in_production
+JWT_REFRESH_SECRET=your_super_secret_refresh_token_key_change_me_in_production
+ACCESS_TOKEN_EXPIRY=15m
+REFRESH_TOKEN_EXPIRY=7d
+COOKIE_SECURE=false
+NODE_ENV=development

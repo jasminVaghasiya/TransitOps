@@ -236,6 +236,18 @@ function initializeDashboard() {
   welcomeProfileName.textContent = currentUser.name;
   welcomeProfileRole.textContent = currentUser.role.replace('_', ' ');
 
+  // Fill in navbar profile details
+  const navbarNameEl = document.getElementById('navbar-user-name');
+  const navbarRoleEl = document.getElementById('navbar-user-role');
+  const navbarAvatarEl = document.getElementById('navbar-user-avatar');
+  if (navbarNameEl) navbarNameEl.textContent = currentUser.name;
+  if (navbarRoleEl) navbarRoleEl.textContent = currentUser.role.replace('_', ' ');
+  if (navbarAvatarEl) {
+    const names = currentUser.name.split(' ');
+    const initials = names.map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    navbarAvatarEl.textContent = initials;
+  }
+
   // Enable/disable navigation items based on active role scopes
   configureNavigation(currentUser.role);
 
@@ -435,42 +447,432 @@ async function loadVehicles() {
   } catch (err) {}
 }
 
+let selectedDriverId = null;
+
+function showDriverDetailsModal(driver) {
+  modalContainer.classList.remove('hidden');
+  modalTitle.textContent = `Driver Profile: ${driver.name}`;
+  
+  let expiryStr = '—';
+  let isExpired = false;
+  if (driver.licenseExpiry) {
+    const expDate = new Date(driver.licenseExpiry);
+    expiryStr = expDate.toLocaleDateString();
+    if (expDate < new Date()) {
+      isExpired = true;
+    }
+  }
+
+  const initials = driver.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  const category = driver.licenseCategory || 'LMV';
+  const tripComp = driver.tripCompletionRate !== undefined ? `${driver.tripCompletionRate}%` : '100%';
+
+  const isExpiredLicense = isExpired;
+  const isSuspendedOrFired = driver.status === 'Suspended' || driver.status === 'Fired';
+  const isOnLeave = driver.status === 'On Leave';
+  const isBlocked = isSuspendedOrFired || isOnLeave || isExpiredLicense;
+  const canUpdate = can('update', 'Driver');
+
+  let leaveDaysLeft = 0;
+  if (isOnLeave && driver.leaveUntil) {
+    const msLeft = new Date(driver.leaveUntil) - new Date();
+    leaveDaysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
+  }
+
+  let leaveInfoHTML = '';
+  if (isOnLeave) {
+    const startDateStr = driver.leaveStart ? new Date(driver.leaveStart).toLocaleDateString() : 'N/A';
+    const returnTimeStr = driver.leaveUntil ? new Date(driver.leaveUntil).toLocaleString() : 'N/A';
+    const reasonStr = driver.leaveReason || 'Not specified';
+    leaveInfoHTML = `
+      <div style="grid-column: 1 / -1; border-top: 1px dashed var(--border-color); padding-top: 12px; margin-top: 10px; font-family: var(--font-family);">
+        <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Leave Information</label>
+        <div style="font-size: 13px; color: var(--warning); line-height: 1.6;">
+          🗓️ <strong>Started:</strong> ${startDateStr}<br>
+          🏁 <strong>Return to Duty:</strong> ${returnTimeStr}<br>
+          📝 <strong>Reason:</strong> <em>"${reasonStr}"</em>
+        </div>
+      </div>
+    `;
+  }
+
+  modalBody.innerHTML = `
+    <div style="display: flex; flex-direction: column; gap: 20px; font-family: var(--font-family); color: var(--text-main);">
+      <div style="display: flex; align-items: center; gap: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
+        ${driver.photo ? `
+          <img src="${driver.photo}" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);" alt="${driver.name}">
+        ` : `
+          <div style="width: 70px; height: 70px; border-radius: 50%; background-color: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; border: 2px solid var(--border-color); text-transform: uppercase;">
+            ${initials}
+          </div>
+        `}
+        <div>
+          <h2 style="font-size: 20px; font-weight: 700; color: var(--text-main); margin-bottom: 4px;">${driver.name}</h2>
+          <span class="badge status-${driver.status.replace(' ', '-')}">${driver.status}</span>
+          ${isOnLeave ? `<span style="font-size: 12.5px; color: var(--warning); font-weight: 600; margin-left: 10px;"><i class="fa-solid fa-clock"></i> ${leaveDaysLeft} day(s) left</span>` : ''}
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+        <div>
+          <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">License Number</label>
+          <span style="font-size: 14.5px; font-weight: 600;">${driver.licenseNumber}</span>
+        </div>
+        <div>
+          <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">License Category</label>
+          <span style="font-size: 14.5px; font-weight: 600;">${category}</span>
+        </div>
+        <div>
+          <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Expiry Date</label>
+          <span style="font-size: 14.5px; font-weight: 600; color: ${isExpired ? 'var(--danger)' : 'var(--text-main)'};">
+            ${expiryStr} ${isExpired ? '<span class="license-expired-badge" style="margin-left: 8px;">EXPIRED</span>' : ''}
+          </span>
+        </div>
+        <div>
+          <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Contact Phone</label>
+          <span style="font-size: 14.5px; font-weight: 600;">${driver.phone}</span>
+        </div>
+        <div>
+          <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Safety Rating</label>
+          <span style="font-size: 14.5px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+            ⭐ ${driver.safetyScore} / 100
+          </span>
+        </div>
+        <div>
+          <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Trip Completion Rate</label>
+          <span style="font-size: 14.5px; font-weight: 600;">${tripComp}</span>
+        </div>
+        ${leaveInfoHTML}
+      </div>
+
+      <div id="modal-actions-container" style="display: flex; gap: 10px; margin-top: 30px; border-top: 1px solid var(--border-color); padding-top: 20px; flex-wrap: wrap; width: 100%;">
+        ${canUpdate ? `
+          ${isBlocked ? `
+            ${isOnLeave ? `
+              <button class="btn btn-primary cancel-leave-btn" style="background-color: var(--success); border-color: var(--success); flex: 1; min-width: 120px; font-weight: 600;">
+                <i class="fa-solid fa-plane-arrival"></i> Cancel Leave (Make Available)
+              </button>
+            ` : driver.status === 'Fired' ? `
+              <button class="btn btn-primary unblock-driver-btn" style="background-color: var(--success); border-color: var(--success); flex: 1; min-width: 120px; font-weight: 600;">
+                <i class="fa-solid fa-user-plus"></i> Unfire Driver
+              </button>
+            ` : `
+              <button class="btn btn-primary unblock-driver-btn" style="background-color: var(--success); border-color: var(--success); flex: 1; min-width: 120px; font-weight: 600;">
+                <i class="fa-solid fa-unlock"></i> Unblock Driver
+              </button>
+            `}
+          ` : `
+            <button class="btn btn-logout block-driver-btn" style="flex: 1; min-width: 120px; font-weight: 600;">
+              <i class="fa-solid fa-ban"></i> Block Driver
+            </button>
+            <button class="btn btn-outline leave-driver-btn" style="background-color: var(--warning-glow); color: var(--warning); border-color: rgba(245, 158, 11, 0.3); flex: 1; min-width: 120px; font-weight: 600;">
+              <i class="fa-solid fa-plane-departure"></i> Put on Leave
+            </button>
+            <button class="btn btn-logout fire-driver-btn" style="background-color: var(--danger); border-color: var(--danger); color: #fff; flex: 1; min-width: 120px; font-weight: 600;">
+              <i class="fa-solid fa-user-minus"></i> Fire Driver
+            </button>
+          `}
+        ` : '<span style="color: var(--text-secondary); font-size: 12px; font-style: italic;">Read-Only permissions. You cannot perform actions on this driver.</span>'}
+      </div>
+    </div>
+  `;
+
+  // Wire events
+  const actionsContainer = modalBody.querySelector('#modal-actions-container');
+  const unblockBtn = modalBody.querySelector('.unblock-driver-btn');
+  const cancelLeaveBtn = modalBody.querySelector('.cancel-leave-btn');
+  const blockBtn = modalBody.querySelector('.block-driver-btn');
+  const leaveBtn = modalBody.querySelector('.leave-driver-btn');
+  const fireBtn = modalBody.querySelector('.fire-driver-btn');
+
+  if (unblockBtn) {
+    unblockBtn.addEventListener('click', async () => {
+      const payload = { leaveStart: null, leaveDays: null, leaveReason: null, leaveUntil: null };
+      if (driver.status === 'Suspended' || driver.status === 'Fired') {
+        payload.status = 'Available';
+      }
+      if (isExpired) {
+        // Extend license expiry date by 1 year from today
+        const oneYearFromNow = new Date();
+        oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+        payload.licenseExpiry = oneYearFromNow.toISOString();
+      }
+      try {
+        await fetchAPI(`/api/drivers/${driver._id}`, {
+          method: 'PATCH',
+          body: JSON.stringify(payload)
+        });
+        showToast(driver.status === 'Fired' ? 'Driver unfired successfully!' : 'Driver unblocked successfully!');
+        modalContainer.classList.add('hidden');
+        loadDrivers();
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  }
+
+  if (cancelLeaveBtn) {
+    cancelLeaveBtn.addEventListener('click', async () => {
+      try {
+        await fetchAPI(`/api/drivers/${driver._id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            status: 'Available',
+            leaveStart: null,
+            leaveDays: null,
+            leaveReason: null,
+            leaveUntil: null
+          })
+        });
+        showToast('Leave cancelled. Driver is now Available.');
+        modalContainer.classList.add('hidden');
+        loadDrivers();
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  }
+
+  if (blockBtn) {
+    blockBtn.addEventListener('click', async () => {
+      try {
+        await fetchAPI(`/api/drivers/${driver._id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'Suspended' })
+        });
+        showToast('Driver blocked (suspended) successfully.');
+        modalContainer.classList.add('hidden');
+        loadDrivers();
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  }
+
+  if (leaveBtn) {
+    leaveBtn.addEventListener('click', () => {
+      // Render Leave Form instead of native prompt popup
+      actionsContainer.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 15px; width: 100%; font-family: var(--font-family);">
+          <h3 style="font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 5px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Configure Leave Details</h3>
+          <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 140px;">
+              <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 5px;">Start Date</label>
+              <input type="date" id="leave-start-input" required class="input-filter" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-sm);" value="${new Date().toISOString().substring(0, 10)}">
+            </div>
+            <div style="flex: 1; min-width: 140px;">
+              <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 5px;">End Date</label>
+              <input type="date" id="leave-end-input" required class="input-filter" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-sm);" value="${new Date(Date.now() + 7*24*60*60*1000).toISOString().substring(0, 10)}">
+            </div>
+            <div style="flex: 1; min-width: 140px;">
+              <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 5px;">Duty Return Time</label>
+              <input type="time" id="leave-time-input" required class="input-filter" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-sm);" value="08:00">
+            </div>
+          </div>
+          <div>
+            <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 5px;">Reason for Leave</label>
+            <input type="text" id="leave-reason-input" required class="input-filter" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-sm);" placeholder="e.g., Medical reasons, Annual holiday, Family event">
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button type="button" class="btn btn-primary confirm-leave-form-btn" style="background-color: var(--success); border-color: var(--success); flex: 1; font-weight: 600;">Confirm Leave</button>
+            <button type="button" class="btn btn-outline cancel-leave-form-btn" style="flex: 1; font-weight: 600;">Cancel</button>
+          </div>
+        </div>
+      `;
+
+      // Wire leave form buttons
+      actionsContainer.querySelector('.cancel-leave-form-btn').addEventListener('click', () => {
+        showDriverDetailsModal(driver);
+      });
+
+      actionsContainer.querySelector('.confirm-leave-form-btn').addEventListener('click', async () => {
+        const leaveStartVal = document.getElementById('leave-start-input').value;
+        const leaveEndVal = document.getElementById('leave-end-input').value;
+        const leaveTimeVal = document.getElementById('leave-time-input').value || '08:00';
+        const leaveReasonVal = document.getElementById('leave-reason-input').value.trim();
+
+        if (!leaveStartVal) {
+          showToast('Please specify a start date.', 'error');
+          return;
+        }
+        if (!leaveEndVal) {
+          showToast('Please specify an end date.', 'error');
+          return;
+        }
+        if (!leaveReasonVal) {
+          showToast('Please specify a reason for leave.', 'error');
+          return;
+        }
+
+        const startParsed = new Date(leaveStartVal + 'T00:00:00');
+        const leaveUntilDate = new Date(leaveEndVal + 'T' + leaveTimeVal);
+
+        if (leaveUntilDate <= startParsed) {
+          showToast('End date and time must be after the start date.', 'error');
+          return;
+        }
+
+        const diffTime = leaveUntilDate - startParsed;
+        const leaveDaysVal = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+
+        try {
+          await fetchAPI(`/api/drivers/${driver._id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+              status: 'On Leave',
+              leaveStart: startParsed.toISOString(),
+              leaveDays: leaveDaysVal,
+              leaveReason: leaveReasonVal,
+              leaveUntil: leaveUntilDate.toISOString()
+            })
+          });
+          showToast(`Driver put on leave until ${leaveUntilDate.toLocaleString()} (${leaveDaysVal} days).`);
+          modalContainer.classList.add('hidden');
+          loadDrivers();
+        } catch (err) {
+          console.error(err);
+        }
+      });
+    });
+  }
+
+  if (fireBtn) {
+    fireBtn.addEventListener('click', () => {
+      // Render Fire Confirmation Panel instead of native confirm dialog
+      actionsContainer.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 15px; width: 100%; font-family: var(--font-family); text-align: center; border-top: 1px solid var(--border-color); padding-top: 15px;">
+          <h3 style="font-size: 14px; font-weight: 700; color: var(--danger); margin-bottom: 5px;">Fire Driver from Duty</h3>
+          <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.4;">
+            Are you sure you want to change <strong>${driver.name}</strong>'s status to <strong>Fired</strong>?<br>
+            This driver will be permanently blocked from all vehicle and trip duties.
+          </p>
+          <div style="display: flex; gap: 10px; margin-top: 10px; justify-content: center; width: 100%;">
+            <button type="button" class="btn btn-logout confirm-fire-form-btn" style="background-color: var(--danger); border-color: var(--danger); color: #fff; flex: 1; font-weight: 600;">Confirm Terminate</button>
+            <button type="button" class="btn btn-outline cancel-fire-form-btn" style="flex: 1; font-weight: 600;">Cancel</button>
+          </div>
+        </div>
+      `;
+
+      // Wire fire confirmation buttons
+      actionsContainer.querySelector('.cancel-fire-form-btn').addEventListener('click', () => {
+        showDriverDetailsModal(driver);
+      });
+
+      actionsContainer.querySelector('.confirm-fire-form-btn').addEventListener('click', async () => {
+        try {
+          await fetchAPI(`/api/drivers/${driver._id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: 'Fired' })
+          });
+          showToast('Driver status successfully set to Fired.');
+          modalContainer.classList.add('hidden');
+          loadDrivers();
+        } catch (err) {
+          console.error(err);
+        }
+      });
+    });
+  }
+}
+
 async function loadDrivers() {
-  const container = document.getElementById('drivers-list');
-  container.innerHTML = '<div class="empty-message" style="grid-column: 1/-1;">Loading Drivers...</div>';
+  const container = document.getElementById('drivers-list-tbody');
+  if (!container) return;
+  container.innerHTML = '<tr><td colspan="8" class="empty-message">Loading Drivers...</td></tr>';
+
+  // Clear selection state when reloading
+  selectedDriverId = null;
+  document.querySelectorAll('#drivers-table tbody tr').forEach(r => r.classList.remove('selected'));
 
   try {
-    const res = await fetchAPI('/api/drivers');
+    const searchVal = document.getElementById('drivers-search')?.value || '';
+    let url = '/api/drivers';
+    if (searchVal) {
+      url += `?search=${encodeURIComponent(searchVal)}`;
+    }
+    const res = await fetchAPI(url);
     container.innerHTML = '';
 
-    if (res.data.drivers.length === 0) {
-      container.innerHTML = '<div class="empty-message" style="grid-column: 1/-1;">No registered drivers.</div>';
+    if (!res || !res.data || !res.data.drivers || res.data.drivers.length === 0) {
+      container.innerHTML = '<tr><td colspan="8" class="empty-message">No registered drivers.</td></tr>';
       return;
     }
 
     res.data.drivers.forEach(driver => {
-      const card = document.createElement('div');
-      card.className = 'driver-card glass hover-lift';
-      card.innerHTML = `
-        <div class="driver-card-avatar">👤</div>
-        <h3>${driver.name}</h3>
-        <span class="badge status-${driver.status.replace(' ', '-')}">${driver.status}</span>
-        <p class="driver-meta"><i class="fa-solid fa-phone"></i> ${driver.phone}</p>
-        <div class="driver-stats">
-          <div class="driver-stat-box">
-            <span>License</span>
-            <strong>${driver.licenseNumber}</strong>
-          </div>
-          <div class="driver-stat-box">
-            <span>Safety Rating</span>
-            <strong>⭐ ${driver.safetyScore}</strong>
-          </div>
-        </div>
+      const row = document.createElement('tr');
+      row.dataset.id = driver._id;
+
+      // Expiry format
+      let expiryStr = '—';
+      let isExpired = false;
+      if (driver.licenseExpiry) {
+        const expDate = new Date(driver.licenseExpiry);
+        const mm = String(expDate.getUTCMonth() + 1).padStart(2, '0');
+        const yyyy = expDate.getUTCFullYear();
+        expiryStr = `${mm}/${yyyy}`;
+        if (expDate < new Date()) {
+          isExpired = true;
+        }
+      }
+
+      // Contact format: +1987650000 -> 98765xxxxx
+      let contactStr = driver.phone || '—';
+      if (contactStr !== '—') {
+        const digits = contactStr.replace(/\D/g, '');
+        if (digits.length >= 5) {
+          contactStr = digits.substring(0, 5) + 'xxxxx';
+        } else {
+          contactStr = digits + 'xxxxx';
+        }
+      }
+
+      const category = driver.licenseCategory || 'LMV';
+      const tripComp = driver.tripCompletionRate !== undefined ? `${driver.tripCompletionRate}%` : '100%';
+
+      const safetyState = (driver.status === 'Suspended' || driver.status === 'Fired' || driver.status === 'On Leave') ? driver.status : (driver.status === 'On Trip' ? 'On Trip' : 'Available');
+      const statusState = driver.status;
+
+      const initials = driver.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+
+      row.innerHTML = `
+        <td style="display: flex; align-items: center; gap: 10px;">
+          ${driver.photo ? `
+            <img src="${driver.photo}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(124, 58, 237, 0.2); flex-shrink: 0;" alt="${driver.name}">
+          ` : `
+            <div class="driver-dp" style="width: 32px; height: 32px; border-radius: 50%; background-color: var(--accent-glow); color: var(--accent-hover); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; text-transform: uppercase; border: 1px solid rgba(124, 58, 237, 0.2); flex-shrink: 0;">
+              ${initials}
+            </div>
+          `}
+          <strong class="driver-name-link" style="color: var(--accent-hover); text-decoration: underline; cursor: pointer;">${driver.name}</strong>
+        </td>
+        <td>${driver.licenseNumber}</td>
+        <td>${category}</td>
+        <td>${expiryStr}${isExpired ? '<span class="license-expired-badge">EXPIRED</span>' : ''}</td>
+        <td>${contactStr}</td>
+        <td>${tripComp}</td>
+        <td><span class="badge status-${safetyState.replace(' ', '-')}">${safetyState}</span></td>
+        <td><span class="badge status-${statusState.replace(' ', '-')}">${statusState}</span></td>
       `;
-      container.appendChild(card);
+
+      // Click on name displays details modal
+      row.querySelector('.driver-name-link').addEventListener('click', (e) => {
+        e.stopPropagation();
+        showDriverDetailsModal(driver);
+      });
+
+      row.addEventListener('click', (e) => {
+        document.querySelectorAll('#drivers-table tbody tr').forEach(r => r.classList.remove('selected'));
+        row.classList.add('selected');
+        selectedDriverId = driver._id;
+      });
+
+      container.appendChild(row);
     });
-  } catch (err) {}
+  } catch (err) {
+    console.error(err);
+  }
 }
+
 
 async function loadTrips() {
   const container = document.getElementById('trips-list');
@@ -892,6 +1294,8 @@ function renderVehicleForm() {
 }
 
 function renderDriverForm() {
+  let photoBase64 = null;
+
   modalBody.innerHTML = `
     <form id="create-driver-form">
       <div class="input-group">
@@ -903,6 +1307,13 @@ function renderDriverForm() {
         <label for="drv-lic"><i class="fa-solid fa-address-card"></i> License Number</label>
       </div>
       <div class="input-group">
+        <select id="drv-category" required>
+          <option value="LMV" selected>LMV (Light Motor Vehicle)</option>
+          <option value="HMV">HMV (Heavy Motor Vehicle)</option>
+        </select>
+        <label for="drv-category"><i class="fa-solid fa-layer-group"></i> License Category</label>
+      </div>
+      <div class="input-group">
         <input type="date" id="drv-expiry" required placeholder=" ">
         <label for="drv-expiry"><i class="fa-solid fa-calendar-days"></i> Expiry Date</label>
       </div>
@@ -910,9 +1321,46 @@ function renderDriverForm() {
         <input type="text" id="drv-phone" required placeholder=" ">
         <label for="drv-phone"><i class="fa-solid fa-phone"></i> Phone Number</label>
       </div>
-      <button type="submit" class="btn btn-primary btn-block">Register Driver</button>
+      <div class="input-group">
+        <input type="number" id="drv-trip-rate" min="0" max="100" value="100" required placeholder=" ">
+        <label for="drv-trip-rate"><i class="fa-solid fa-percent"></i> Trip Completion Rate (%)</label>
+      </div>
+      <div class="input-group" style="display: flex; flex-direction: column; gap: 8px;">
+        <label style="position: static; transform: none; font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; margin-bottom: 5px; display: block;">
+          <i class="fa-solid fa-image"></i> Driver Photo
+        </label>
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <button type="button" id="browse-photo-btn" class="btn btn-outline" style="padding: 10px 15px; font-size: 13px; font-weight: 600;">
+            <i class="fa-solid fa-folder-open"></i> Browse Photo...
+          </button>
+          <input type="file" id="drv-photo-file" accept="image/*" style="display: none;">
+          <img id="drv-photo-preview" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color); display: none;" alt="Preview">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block" style="margin-top: 15px;">Register Driver</button>
     </form>
   `;
+
+  const browseBtn = document.getElementById('browse-photo-btn');
+  const fileInput = document.getElementById('drv-photo-file');
+  const previewImg = document.getElementById('drv-photo-preview');
+
+  browseBtn.addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        photoBase64 = event.target.result;
+        previewImg.src = photoBase64;
+        previewImg.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+  });
 
   document.getElementById('create-driver-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -922,8 +1370,11 @@ function renderDriverForm() {
         body: JSON.stringify({
           name: document.getElementById('drv-name').value,
           licenseNumber: document.getElementById('drv-lic').value,
+          licenseCategory: document.getElementById('drv-category').value,
           licenseExpiry: document.getElementById('drv-expiry').value,
           phone: document.getElementById('drv-phone').value,
+          tripCompletionRate: parseInt(document.getElementById('drv-trip-rate').value, 10),
+          photo: photoBase64 || undefined,
         }),
       });
       showToast('Driver registered successfully!');
@@ -1172,3 +1623,36 @@ function renderFinanceForm() {
 
   showExpenseForm();
 }
+
+// ==========================================
+// MOCKUP DRIVERS INTERACTION HANDLERS
+// ==========================================
+document.getElementById('drivers-search')?.addEventListener('input', () => {
+  loadDrivers();
+});
+
+document.getElementById('btn-add-driver-mockup')?.addEventListener('click', () => {
+  modalContainer.classList.remove('hidden');
+  modalTitle.textContent = 'Register New Driver';
+  renderDriverForm();
+});
+
+document.querySelectorAll('.toggle-stat-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    if (!selectedDriverId) {
+      showToast('Please select a driver from the table first.', 'error');
+      return;
+    }
+    const newStatus = btn.dataset.status;
+    try {
+      await fetchAPI(`/api/drivers/${selectedDriverId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus })
+      });
+      showToast(`Driver status updated to ${newStatus}.`);
+      loadDrivers();
+    } catch (err) {
+      console.error(err);
+    }
+  });
+});

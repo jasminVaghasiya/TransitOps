@@ -170,9 +170,13 @@
           </button>
 
           <!-- Profile Dropper -->
-          <div class="nav-profile" id="nav-profile-menu">
-            <span class="avatar">👤</span>
-            <div class="profile-dropdown hidden" id="profile-dropdown-content">
+          <div class="nav-profile-container" id="nav-profile-menu" style="display: flex; align-items: center; gap: 12px; cursor: pointer; position: relative;">
+            <div class="nav-profile-info" style="text-align: right; font-family: var(--font-family); display: flex; flex-direction: column;">
+              <span id="navbar-user-name" style="font-size: 13.5px; font-weight: 600; color: var(--text-main); line-height: 1.2;">Username</span>
+              <span id="navbar-user-role" style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); line-height: 1.2;">Role</span>
+            </div>
+            <div class="avatar" id="navbar-user-avatar" style="width: 36px; height: 36px; border-radius: 50%; background-color: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; text-transform: uppercase; border: 2px solid var(--border-color);">👤</div>
+            <div class="profile-dropdown hidden" id="profile-dropdown-content" style="top: 100%; right: 0; margin-top: 8px; position: absolute; z-index: 50;">
               <a href="#" class="profile-link" data-page="settings"><i class="fa-solid fa-user-astronaut"></i> My Profile</a>
               <a href="#" class="profile-link" data-page="settings"><i class="fa-solid fa-gear"></i> Settings</a>
               <hr>
@@ -328,21 +332,51 @@
              PAGE: DRIVERS
              ========================================== -->
         <section id="page-drivers" class="page-content hidden">
-          <div class="control-row">
-            <div class="filters-left">
-              <input type="text" class="input-filter" id="drivers-search" placeholder="Search drivers by name...">
-              <select class="input-select" id="drivers-filter-status" aria-label="Filter by driver status">
-                <option value="">All Statuses</option>
-                <option value="Available">Available</option>
-                <option value="On Trip">On Trip</option>
-                <option value="Suspended">Suspended</option>
-                <option value="Off Duty">Off Duty</option>
-              </select>
-            </div>
-            <button class="btn btn-outline" id="btn-export-drivers"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+          <div class="page-header-row" style="margin-bottom: 20px;">
+            <h1 style="font-size: 24px; font-weight: 700; color: var(--text-main); font-family: var(--font-family);">3. Drivers & Safety Profiles</h1>
           </div>
 
-          <div class="drivers-grid" id="drivers-list"></div>
+          <div class="control-row">
+            <div class="filters-left">
+              <input type="text" class="input-filter" id="drivers-search" placeholder="Search...">
+            </div>
+            <div class="actions-right">
+              <button class="btn btn-outline" id="btn-export-drivers"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+            </div>
+          </div>
+
+          <div class="table-container glass">
+            <table id="drivers-table">
+              <thead>
+                <tr>
+                  <th>DRIVER</th>
+                  <th>LICENSE NO</th>
+                  <th>CATEGORY</th>
+                  <th>EXPIRY</th>
+                  <th>CONTACT</th>
+                  <th>TRIP COMPL.</th>
+                  <th>SAFETY</th>
+                  <th>STATUS</th>
+                </tr>
+              </thead>
+              <tbody id="drivers-list-tbody"></tbody>
+            </table>
+          </div>
+
+          <div class="drivers-footer-controls" style="margin-top: 30px; display: flex; flex-direction: column; gap: 15px;">
+            <div class="toggle-stat-row" style="display: flex; align-items: center; gap: 15px;">
+              <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-secondary);">TOGGLE STAT</span>
+              <div class="toggle-stat-buttons" style="display: flex; gap: 10px;">
+                <button class="btn btn-outline toggle-stat-btn" data-status="Available" style="background-color: var(--success-glow); color: var(--success); border-color: rgba(16, 185, 129, 0.3); font-weight: 600;">Available</button>
+                <button class="btn btn-outline toggle-stat-btn" data-status="On Trip" style="background-color: var(--info-glow); color: var(--info); border-color: rgba(59, 130, 246, 0.3); font-weight: 600;">On Trip</button>
+                <button class="btn btn-outline toggle-stat-btn" data-status="Off Duty" style="background-color: rgba(148, 163, 184, 0.1); color: var(--text-secondary); border-color: rgba(148, 163, 184, 0.2); font-weight: 600;">Off Duty</button>
+                <button class="btn btn-outline toggle-stat-btn" data-status="Suspended" style="background-color: var(--danger-glow); color: var(--danger); border-color: rgba(239, 68, 68, 0.3); font-weight: 600;">Suspended</button>
+              </div>
+            </div>
+            <div class="safety-rule-row" style="color: #F59E0B; font-weight: 600; font-size: 13.5px; font-family: var(--font-family);">
+              Rule: Expired license or Suspended status &rarr; blocked from trip assignment
+            </div>
+          </div>
         </section>
 
         <!-- ==========================================

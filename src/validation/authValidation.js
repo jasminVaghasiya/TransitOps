@@ -38,10 +38,10 @@ export const signupSchema = Joi.object({
     }),
 
   role: Joi.string()
-    .valid('user', 'admin')
-    .default('user')
+    .valid('read_only', 'admin')
+    .default('read_only')
     .messages({
-      'any.only': 'Role must be either user or admin',
+      'any.only': 'Role must be either read_only or admin',
     }),
 });
 
