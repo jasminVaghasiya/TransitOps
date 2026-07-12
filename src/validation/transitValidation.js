@@ -14,6 +14,8 @@ export const vehicleSchema = Joi.object({
   modelName: Joi.string().trim().required(),
   capacityKg: Joi.number().positive().required(),
   status: Joi.string().valid('Available', 'On Trip', 'In Shop', 'Retired').default('Available'),
+  vehicleType: Joi.string().valid('Truck', 'Van', 'Trailer', 'Car').default('Truck'),
+  region: Joi.string().valid('North', 'South', 'East', 'West').default('North'),
 });
 
 export const driverSchema = Joi.object({
@@ -77,6 +79,8 @@ export const updateVehicleSchema = Joi.object({
   modelName: Joi.string().trim().optional(),
   capacityKg: Joi.number().positive().optional(),
   status: Joi.string().valid('Available', 'On Trip', 'In Shop', 'Retired').optional(),
+  vehicleType: Joi.string().valid('Truck', 'Van', 'Trailer', 'Car').optional(),
+  region: Joi.string().valid('North', 'South', 'East', 'West').optional(),
 });
 
 export const updateDriverSchema = Joi.object({

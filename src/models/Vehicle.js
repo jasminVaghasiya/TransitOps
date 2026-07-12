@@ -29,6 +29,16 @@ const vehicleSchema = new mongoose.Schema(
       enum: ['Available', 'On Trip', 'In Shop', 'Retired'],
       default: 'Available',
     },
+    vehicleType: {
+      type: String,
+      enum: ['Truck', 'Van', 'Trailer', 'Car'],
+      default: 'Truck',
+    },
+    region: {
+      type: String,
+      enum: ['North', 'South', 'East', 'West'],
+      default: 'North',
+    },
     isDeleted: {
       type: Boolean,
       default: false,

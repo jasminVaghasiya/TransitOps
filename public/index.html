@@ -23,37 +23,102 @@
        LOGIN VIEW SCREEN
        ========================================== -->
   <main id="login-view" class="login-view">
-    <div class="login-card glass">
-      <div class="login-header">
-        <div class="logo">
-          <i class="fa-solid fa-truck-fast logo-icon"></i>
-          <h1>Transit<span>Ops</span></h1>
+    <div class="login-container glass">
+      <!-- Left Info & Role Auto-loader Panel -->
+      <div class="login-info-panel">
+        <div>
+          <div class="logo" style="justify-content: flex-start; color: #1F2937;">
+            <i class="fa-solid fa-truck-fast logo-icon" style="color: #92400E;"></i>
+            <h1 style="color: #1F2937;">Transit<span style="color: #92400E;">Ops</span></h1>
+          </div>
+          <p class="subtitle">Smart Transport Operations Platform</p>
+
+          <div class="quick-roles-container">
+            <h3>One login, infinite scope</h3>
+            <ul class="role-list">
+              <li class="role-item" data-email="manager@transitops.com" data-role="fleet_manager">
+                <span class="role-bullet"></span> Fleet Manager
+              </li>
+              <li class="role-item" data-email="dispatcher@transitops.com" data-role="dispatcher">
+                <span class="role-bullet"></span> Dispatcher
+              </li>
+              <li class="role-item" data-email="safety@transitops.com" data-role="safety_officer">
+                <span class="role-bullet"></span> Safety Officer
+              </li>
+              <li class="role-item" data-email="finance@transitops.com" data-role="financial_analyst">
+                <span class="role-bullet"></span> Financial Analyst
+              </li>
+              <li class="role-item" data-email="admin@transitops.com" data-role="admin">
+                <span class="role-bullet"></span> Administrator
+              </li>
+              <li class="role-item" data-email="auditor@transitops.com" data-role="read_only">
+                <span class="role-bullet"></span> Auditor (Read-Only)
+              </li>
+            </ul>
+          </div>
         </div>
-        <p>Enterprise Smart Transport & Logistics Operations</p>
+
+        <footer class="login-footer">
+          <p>TRANSITOPS &copy; 2026 &bull; RBAC ENABLED</p>
+        </footer>
       </div>
 
-      <form id="login-form" class="login-form">
-        <div class="input-group">
-          <input type="email" id="login-email" required placeholder=" ">
-          <label for="login-email"><i class="fa-regular fa-envelope"></i> Email Address</label>
+      <!-- Right Login Credentials Form Panel -->
+      <div class="login-form-panel">
+        <div class="form-header">
+          <h2>Sign in to your account</h2>
+          <p>Enter your credentials to continue</p>
         </div>
-        <div class="input-group">
-          <input type="password" id="login-password" required placeholder=" ">
-          <label for="login-password"><i class="fa-solid fa-lock"></i> Password</label>
-        </div>
-        <button type="submit" class="btn btn-primary btn-block ripple-btn">Sign In <i class="fa-solid fa-arrow-right"></i></button>
-      </form>
 
-      <div class="demo-accounts">
-        <h3>Quick Test Role Logins</h3>
-        <p>Select a profile to automatically authenticate:</p>
-        <div class="demo-grid">
-          <button type="button" class="btn btn-outline demo-btn" data-email="admin@transitops.com">Admin</button>
-          <button type="button" class="btn btn-outline demo-btn" data-email="manager@transitops.com">Fleet Manager</button>
-          <button type="button" class="btn btn-outline demo-btn" data-email="dispatcher@transitops.com">Dispatcher</button>
-          <button type="button" class="btn btn-outline demo-btn" data-email="safety@transitops.com">Safety Officer</button>
-          <button type="button" class="btn btn-outline demo-btn" data-email="finance@transitops.com">Financial Analyst</button>
-          <button type="button" class="btn btn-outline demo-btn" data-email="auditor@transitops.com">Auditor (Read-Only)</button>
+        <!-- Dashboard error indicator dashed red block -->
+        <div id="login-error-box" class="login-error-box hidden">
+          <h4>Error state</h4>
+          <p><i class="fa-solid fa-circle-xmark"></i> <span id="login-error-message">Invalid credentials.</span></p>
+          <p class="desc">Account locked after 5 failed attempts.</p>
+        </div>
+
+        <form id="login-form" class="login-form">
+          <div class="input-group">
+            <input type="email" id="login-email" required placeholder=" ">
+            <label for="login-email">EMAIL</label>
+          </div>
+          
+          <div class="input-group">
+            <input type="password" id="login-password" required placeholder=" ">
+            <label for="login-password">PASSWORD</label>
+          </div>
+
+          <div class="input-group">
+            <select id="login-role" required>
+              <option value="fleet_manager">Fleet Manager</option>
+              <option value="dispatcher">Dispatcher</option>
+              <option value="safety_officer">Safety Officer</option>
+              <option value="financial_analyst">Financial Analyst</option>
+              <option value="admin">Administrator</option>
+              <option value="read_only">Auditor (Read-Only)</option>
+            </select>
+            <label for="login-role">ROLE (RBAC)</label>
+          </div>
+
+          <div class="form-options">
+            <label class="remember-me">
+              <input type="checkbox" id="remember-me-check">
+              <span>Remember me</span>
+            </label>
+            <a href="#" class="forgot-pass">Forgot password?</a>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block ripple-btn" style="background-color: #92400E; box-shadow: 0 4px 14px rgba(146, 64, 14, 0.4); margin-top: 10px;">Sign In</button>
+        </form>
+
+        <div class="role-scope-info">
+          <p>Access is scoped by role after login:</p>
+          <ul>
+            <li>&bull; Fleet Manager &rarr; Fleet, Maintenance</li>
+            <li>&bull; Dispatcher &rarr; Dashboard, Trips</li>
+            <li>&bull; Safety Officer &rarr; Drivers, Compliance</li>
+            <li>&bull; Financial Analyst &rarr; Fuel & Expenses, Analytics</li>
+          </ul>
         </div>
       </div>
     </div>
@@ -189,71 +254,124 @@
              PAGE: DASHBOARD
              ========================================== -->
         <section id="page-dashboard" class="page-content">
-          <!-- Statistics Cards Grid -->
-          <div class="stats-grid">
-            <div class="stat-card glass hover-lift">
+          <!-- Dashboard Filters -->
+          <div class="control-row" style="margin-bottom: 20px;">
+            <div class="filters-left">
+              <select class="input-select" id="dash-filter-type" aria-label="Filter by Vehicle Type">
+                <option value="">All Vehicle Types</option>
+                <option value="Truck">Trucks</option>
+                <option value="Van">Vans</option>
+                <option value="Trailer">Trailers</option>
+                <option value="Car">Cars</option>
+              </select>
+              <select class="input-select" id="dash-filter-region" aria-label="Filter by Region">
+                <option value="">All Regions</option>
+                <option value="North">North</option>
+                <option value="South">South</option>
+                <option value="East">East</option>
+                <option value="West">West</option>
+              </select>
+              <select class="input-select" id="dash-filter-status" aria-label="Filter by Status">
+                <option value="">All Statuses</option>
+                <option value="Available">Available</option>
+                <option value="On Trip">On Trip</option>
+                <option value="In Shop">In Shop</option>
+                <option value="Retired">Retired</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Expanded Statistics Cards Grid -->
+          <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 24px;">
+            
+            <div class="stat-card glass hover-lift" style="height: 120px; padding: 18px;">
               <div class="stat-header">
-                <span class="stat-title">Total Vehicles</span>
-                <i class="fa-solid fa-truck-moving accent-icon"></i>
+                <span class="stat-title">Active Vehicles</span>
+                <i class="fa-solid fa-truck-fast blue-icon"></i>
               </div>
-              <div class="stat-main">
-                <span class="stat-value" id="dash-total-vehicles">-</span>
-                <span class="stat-trend green"><i class="fa-solid fa-arrow-trend-up"></i> +12%</span>
-              </div>
-              <div class="sparkline-wrapper">
-                <svg viewBox="0 0 100 30" class="sparkline">
-                  <path d="M0,25 Q15,5 30,20 T60,10 T90,15 T100,5" fill="none" stroke="url(#accentGrad)" stroke-width="2"></path>
-                </svg>
+              <div class="stat-main" style="margin-top: 4px;">
+                <span class="stat-value" id="dash-active-vehicles" style="font-size: 26px;">-</span>
+                <span class="stat-trend green"><i class="fa-solid fa-route"></i> Active</span>
               </div>
             </div>
 
-            <div class="stat-card glass hover-lift">
+            <div class="stat-card glass hover-lift" style="height: 120px; padding: 18px;">
               <div class="stat-header">
                 <span class="stat-title">Available Vehicles</span>
                 <i class="fa-solid fa-circle-check green-icon"></i>
               </div>
-              <div class="stat-main">
-                <span class="stat-value" id="dash-avail-vehicles">-</span>
-                <span class="stat-trend green"><i class="fa-solid fa-circle"></i> Good</span>
-              </div>
-              <div class="sparkline-wrapper">
-                <svg viewBox="0 0 100 30" class="sparkline">
-                  <path d="M0,20 Q20,10 40,25 T80,15 T100,10" fill="none" stroke="#10B981" stroke-width="2"></path>
-                </svg>
+              <div class="stat-main" style="margin-top: 4px;">
+                <span class="stat-value" id="dash-avail-vehicles" style="font-size: 26px;">-</span>
+                <span class="stat-trend green"><i class="fa-solid fa-check"></i> Ready</span>
               </div>
             </div>
 
-            <div class="stat-card glass hover-lift">
+            <div class="stat-card glass hover-lift" style="height: 120px; padding: 18px;">
               <div class="stat-header">
-                <span class="stat-title">Registered Drivers</span>
-                <i class="fa-solid fa-users blue-icon"></i>
+                <span class="stat-title">In Shop (Maintenance)</span>
+                <i class="fa-solid fa-screwdriver-wrench warning-icon"></i>
               </div>
-              <div class="stat-main">
-                <span class="stat-value" id="dash-total-drivers">-</span>
-                <span class="stat-trend green"><i class="fa-solid fa-arrow-trend-up"></i> +4%</span>
-              </div>
-              <div class="sparkline-wrapper">
-                <svg viewBox="0 0 100 30" class="sparkline">
-                  <path d="M0,15 Q30,25 60,10 T90,20 T100,15" fill="none" stroke="#60A5FA" stroke-width="2"></path>
-                </svg>
+              <div class="stat-main" style="margin-top: 4px;">
+                <span class="stat-value" id="dash-maint-vehicles" style="font-size: 26px;">-</span>
+                <span class="stat-trend"><i class="fa-solid fa-circle"></i> Service</span>
               </div>
             </div>
 
-            <div class="stat-card glass hover-lift">
+            <div class="stat-card glass hover-lift" style="height: 120px; padding: 18px;">
               <div class="stat-header">
-                <span class="stat-title">Trips Scheduled</span>
-                <i class="fa-solid fa-route purple-icon"></i>
+                <span class="stat-title">Active Trips</span>
+                <i class="fa-solid fa-truck-ramp-box purple-icon"></i>
               </div>
-              <div class="stat-main">
-                <span class="stat-value" id="dash-total-trips">-</span>
-                <span class="stat-trend green"><i class="fa-solid fa-arrow-trend-up"></i> +8%</span>
-              </div>
-              <div class="sparkline-wrapper">
-                <svg viewBox="0 0 100 30" class="sparkline">
-                  <path d="M0,25 Q20,5 50,15 T80,10 T100,20" fill="none" stroke="#8B5CF6" stroke-width="2"></path>
-                </svg>
+              <div class="stat-main" style="margin-top: 4px;">
+                <span class="stat-value" id="dash-active-trips" style="font-size: 26px;">-</span>
+                <span class="stat-trend green"><i class="fa-solid fa-arrow-trend-up"></i> Dispatched</span>
               </div>
             </div>
+
+            <div class="stat-card glass hover-lift" style="height: 120px; padding: 18px;">
+              <div class="stat-header">
+                <span class="stat-title">Pending Trips</span>
+                <i class="fa-solid fa-clock-rotate-left blue-icon"></i>
+              </div>
+              <div class="stat-main" style="margin-top: 4px;">
+                <span class="stat-value" id="dash-pending-trips" style="font-size: 26px;">-</span>
+                <span class="stat-trend"><i class="fa-solid fa-file"></i> Drafts</span>
+              </div>
+            </div>
+
+            <div class="stat-card glass hover-lift" style="height: 120px; padding: 18px;">
+              <div class="stat-header">
+                <span class="stat-title">Drivers On Duty</span>
+                <i class="fa-solid fa-id-card accent-icon"></i>
+              </div>
+              <div class="stat-main" style="margin-top: 4px;">
+                <span class="stat-value" id="dash-drivers-duty" style="font-size: 26px;">-</span>
+                <span class="stat-trend green"><i class="fa-solid fa-id-badge"></i> Assigned</span>
+              </div>
+            </div>
+
+            <div class="stat-card glass hover-lift" style="height: 120px; padding: 18px;">
+              <div class="stat-header">
+                <span class="stat-title">Fleet Utilization</span>
+                <i class="fa-solid fa-percent green-icon"></i>
+              </div>
+              <div class="stat-main" style="margin-top: 4px;">
+                <span class="stat-value" id="dash-utilization" style="font-size: 26px;">-%</span>
+                <span class="stat-trend green"><i class="fa-solid fa-chart-simple"></i> Rate</span>
+              </div>
+            </div>
+
+            <div class="stat-card glass hover-lift" style="height: 120px; padding: 18px;">
+              <div class="stat-header">
+                <span class="stat-title">Fuel Expenses</span>
+                <i class="fa-solid fa-gas-pump warning-icon"></i>
+              </div>
+              <div class="stat-main" style="margin-top: 4px;">
+                <span class="stat-value" id="dash-fuel-costs" style="font-size: 26px;">-</span>
+                <span class="stat-trend"><i class="fa-solid fa-receipt"></i> Cost</span>
+              </div>
+            </div>
+
           </div>
 
           <!-- Secondary Grid -->
@@ -372,6 +490,7 @@
           <div class="tabs">
             <button class="tab-btn active" data-tab="expenses">Expenses</button>
             <button class="tab-btn" data-tab="fuel">Fuel Fill-Ups</button>
+            <button class="tab-btn" data-tab="cost-summary">Cost Summary</button>
           </div>
 
           <div id="tab-content-expenses" class="tab-content">
@@ -408,6 +527,10 @@
                 <tbody id="fuel-list"></tbody>
               </table>
             </div>
+          </div>
+
+          <div id="tab-content-cost-summary" class="tab-content hidden">
+            <div id="cost-summary-container" style="display:flex;flex-direction:column;gap:16px;padding:4px 0;"></div>
           </div>
         </section>
 

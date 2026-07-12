@@ -9,6 +9,7 @@ import tripRoutes from './routes/tripRoutes.js';
 import maintenanceRoutes from './routes/maintenanceRoutes.js';
 import expenseRoutes from './routes/expenseRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 import errorHandler from './middleware/errorHandler.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 
@@ -54,6 +55,7 @@ app.use('/api/trips', tripRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Base route for API status
 app.get('/', (req, res) => {
