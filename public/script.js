@@ -20,25 +20,18 @@ const toBase64 = file => new Promise((resolve, reject) => {
 // CLIENT AUTHORIZATION RULES (RBAC)
 // ==========================================
 const ROLE_ABILITIES = {
-  admin: {
-    manage: ['all'],
-  },
   fleet_manager: {
-    create: ['Vehicle', 'Maintenance'],
     read: ['Vehicle', 'Maintenance', 'Driver', 'Trip', 'FuelLog', 'Expense', 'Report', 'Dashboard'],
-    update: ['Vehicle', 'Maintenance'],
-    delete: ['Vehicle', 'Maintenance'],
-    retire: ['Vehicle'],
-    sell: ['Vehicle'],
-    assign: ['Vehicle'],
-    close: ['Maintenance'],
+    create: ['Vehicle', 'Trip', 'Expense', 'FuelLog', 'Maintenance'],
+    update: ['Vehicle', 'Trip', 'Expense', 'FuelLog', 'Maintenance'],
+    delete: ['Vehicle', 'Trip', 'Expense', 'FuelLog', 'Maintenance'],
     export: ['Report'],
   },
-  dispatcher: {
-    create: ['Trip'],
+  driver: {
+    create: ['Trip', 'FuelLog', 'Expense'],
     read: ['Vehicle', 'Driver', 'Trip', 'Maintenance', 'FuelLog', 'Expense', 'Report', 'Dashboard'],
-    update: ['Trip'],
-    delete: ['Trip'],
+    update: ['Trip', 'FuelLog', 'Expense'],
+    delete: ['Trip', 'FuelLog', 'Expense'],
     dispatch: ['Trip'],
     complete: ['Trip'],
     cancel: ['Trip'],
@@ -62,9 +55,6 @@ const ROLE_ABILITIES = {
     cancel: ['Expense'],
     export: ['FuelLog', 'Expense', 'Report'],
   },
-  read_only: {
-    read: ['all'],
-  },
 };
 
 function can(action, subject) {
@@ -72,25 +62,9 @@ function can(action, subject) {
   const abilities = ROLE_ABILITIES[currentUser.role];
   if (!abilities) return false;
 
-  // Admin bypass
-  if (abilities['manage'] && abilities['manage'].includes('all')) {
-    return true;
-  }
-
-  // Action check
+  // Direct action check
   const subjectsForAction = abilities[action];
   if (subjectsForAction && (subjectsForAction.includes(subject) || subjectsForAction.includes('all'))) {
-    return true;
-  }
-
-  // General subject manage scope
-  const manageSubjects = abilities['manage'];
-  if (manageSubjects && (manageSubjects.includes(subject) || manageSubjects.includes('all'))) {
-    return true;
-  }
-
-  // Reading bypass on wildcard
-  if (action === 'read' && abilities['read'] && abilities['read'].includes('all')) {
     return true;
   }
 
@@ -103,6 +77,8 @@ function can(action, subject) {
 const loginView = document.getElementById('login-view');
 const appView = document.getElementById('app-view');
 const loginForm = document.getElementById('login-form');
+const signupForm = document.getElementById('signup-form');
+const forgotForm = document.getElementById('forgot-form');
 const loginEmailInput = document.getElementById('login-email');
 const loginPasswordInput = document.getElementById('login-password');
 const userDisplayName = document.getElementById('user-display-name');
@@ -158,6 +134,7 @@ async function fetchAPI(url, options = {}) {
     options.headers['Authorization'] = `Bearer ${accessToken}`;
   }
   options.headers['Content-Type'] = options.headers['Content-Type'] || 'application/json';
+  options.credentials = options.credentials || 'include';
 
   try {
     let res = await fetch(url, options);
@@ -190,7 +167,7 @@ async function fetchAPI(url, options = {}) {
 
 async function performSilentRefresh() {
   try {
-    const res = await fetch('/api/auth/refresh', { method: 'POST' });
+    const res = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' });
     if (res.ok) {
       const data = await res.json();
       accessToken = data.data.accessToken;
@@ -248,6 +225,105 @@ document.querySelectorAll('.role-item').forEach(btn => {
   });
 });
 
+// Toggle link interactions
+const linkToForgot = document.getElementById('link-to-forgot');
+const linkToSignup = document.getElementById('link-to-signup');
+const linkToSigninFromSignup = document.getElementById('link-to-signin-from-signup');
+const linkToSigninFromForgot = document.getElementById('link-to-signin-from-forgot');
+
+const panelTitle = document.getElementById('login-panel-title');
+const panelSubtitle = document.getElementById('login-panel-subtitle');
+
+if (linkToForgot) {
+  linkToForgot.addEventListener('click', (e) => {
+    e.preventDefault();
+    loginForm.classList.add('hidden');
+    signupForm.classList.add('hidden');
+    forgotForm.classList.remove('hidden');
+    if (panelTitle) panelTitle.textContent = 'Reset your password';
+    if (panelSubtitle) panelSubtitle.textContent = 'Enter email to receive instructions';
+  });
+}
+
+if (linkToSignup) {
+  linkToSignup.addEventListener('click', (e) => {
+    e.preventDefault();
+    loginForm.classList.add('hidden');
+    forgotForm.classList.add('hidden');
+    signupForm.classList.remove('hidden');
+    if (panelTitle) panelTitle.textContent = 'Create a new account';
+    if (panelSubtitle) panelSubtitle.textContent = 'Enter details to register your organization';
+  });
+}
+
+if (linkToSigninFromSignup) {
+  linkToSigninFromSignup.addEventListener('click', (e) => {
+    e.preventDefault();
+    signupForm.classList.add('hidden');
+    forgotForm.classList.add('hidden');
+    loginForm.classList.remove('hidden');
+    if (panelTitle) panelTitle.textContent = 'Sign in to your account';
+    if (panelSubtitle) panelSubtitle.textContent = 'Enter your credentials to continue';
+  });
+}
+
+if (linkToSigninFromForgot) {
+  linkToSigninFromForgot.addEventListener('click', (e) => {
+    e.preventDefault();
+    signupForm.classList.add('hidden');
+    forgotForm.classList.add('hidden');
+    loginForm.classList.remove('hidden');
+    if (panelTitle) panelTitle.textContent = 'Sign in to your account';
+    if (panelSubtitle) panelSubtitle.textContent = 'Enter your credentials to continue';
+  });
+}
+
+// Signup Form Submit Handler
+if (signupForm) {
+  signupForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('signup-name').value;
+    const email = document.getElementById('signup-email').value;
+    const password = document.getElementById('signup-password').value;
+    const role = document.getElementById('signup-role').value;
+
+    try {
+      const response = await fetchAPI('/api/auth/signup', {
+        method: 'POST',
+        body: JSON.stringify({ name, email, password, role }),
+      });
+
+      if (response && response.status === 'success') {
+        showToast('Registration successful! Please sign in with your new credentials.', 'success');
+        signupForm.classList.add('hidden');
+        loginForm.classList.remove('hidden');
+        loginEmailInput.value = email;
+        const loginRoleSelect = document.getElementById('login-role');
+        if (loginRoleSelect) loginRoleSelect.value = role;
+        if (panelTitle) panelTitle.textContent = 'Sign in to your account';
+        if (panelSubtitle) panelSubtitle.textContent = 'Enter your credentials to continue';
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  });
+}
+
+// Forgot Password Form Submit Handler
+if (forgotForm) {
+  forgotForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = document.getElementById('forgot-email').value;
+    showToast(`Password reset link has been successfully dispatched to ${email}!`);
+    forgotForm.classList.add('hidden');
+    loginForm.classList.remove('hidden');
+    if (panelTitle) panelTitle.textContent = 'Sign in to your account';
+    if (panelSubtitle) panelSubtitle.textContent = 'Enter your credentials to continue';
+  });
+}
+
+
+
 function initializeDashboard() {
   loginView.classList.add('hidden');
   appView.classList.remove('hidden');
@@ -273,8 +349,21 @@ function initializeDashboard() {
   // Enable/disable navigation items based on active role scopes
   configureNavigation(currentUser.role);
 
-  // Load default dashboard
-  loadPage('dashboard');
+  // Load role-specific default landing page
+  const defaultPages = {
+    fleet_manager: 'vehicles',
+    driver: 'trips',
+    safety_officer: 'drivers',
+    financial_analyst: 'finance',
+  };
+  const landingPage = defaultPages[currentUser.role] || 'dashboard';
+  
+  // Activate the correct nav link
+  navLinks.forEach(l => l.classList.remove('active'));
+  const defaultNavLink = document.querySelector(`[data-page="${landingPage}"]`);
+  if (defaultNavLink) defaultNavLink.classList.add('active');
+  
+  loadPage(landingPage);
 
   // Bind dashboard filters change events
   const typeFilter = document.getElementById('dash-filter-type');
@@ -292,11 +381,10 @@ function initializeDashboard() {
 
 function configureNavigation(role) {
   const hiddenSelectors = {
-    fleet_manager: ['#nav-finance', '#nav-audit', '#nav-users', '#nav-roles'],
-    dispatcher: ['#nav-finance', '#nav-audit', '#nav-users', '#nav-roles'],
-    safety_officer: ['#nav-finance', '#nav-audit', '#nav-users', '#nav-roles'],
-    financial_analyst: ['#nav-audit', '#nav-users', '#nav-roles'],
-    read_only: ['#nav-audit', '#nav-users', '#nav-roles'],
+    fleet_manager: [],
+    driver: ['#nav-dashboard', '#nav-documents', '#nav-reports', '#nav-settings', '#nav-users'],
+    safety_officer: ['#nav-finance', '#nav-maintenance', '#nav-reports', '#nav-documents', '#nav-users'],
+    financial_analyst: ['#nav-maintenance', '#nav-settings', '#nav-complaints', '#nav-users'],
   };
 
   // Reset menu lists visibility
@@ -359,10 +447,26 @@ themeToggleBtn.addEventListener('click', () => {
 navProfileMenu.addEventListener('click', (e) => {
   e.stopPropagation();
   profileDropdownContent.classList.toggle('hidden');
+  const notifDropdown = document.getElementById('notifications-dropdown');
+  if (notifDropdown) notifDropdown.classList.add('hidden');
 });
+
+const notificationsBell = document.getElementById('notifications-bell');
+const notificationsDropdown = document.getElementById('notifications-dropdown');
+
+if (notificationsBell && notificationsDropdown) {
+  notificationsBell.addEventListener('click', (e) => {
+    e.stopPropagation();
+    notificationsDropdown.classList.toggle('hidden');
+    profileDropdownContent.classList.add('hidden');
+  });
+}
 
 document.addEventListener('click', () => {
   profileDropdownContent.classList.add('hidden');
+  if (notificationsDropdown) {
+    notificationsDropdown.classList.add('hidden');
+  }
 });
 
 // ==========================================
@@ -385,6 +489,20 @@ navLinks.forEach(link => {
 });
 
 function loadPage(page) {
+  if (currentUser) {
+    const hidden = {
+      fleet_manager: [],
+      driver: ['dashboard', 'documents', 'reports', 'settings', 'users'],
+      safety_officer: ['finance', 'maintenance', 'reports', 'documents', 'users'],
+      financial_analyst: ['maintenance', 'settings', 'complaints', 'users'],
+    };
+    const restrictedPages = hidden[currentUser.role];
+    if (restrictedPages && restrictedPages.includes(page)) {
+      showToast('You do not have permission to access this page.', 'error');
+      return;
+    }
+  }
+
   currentActivePage = page;
   updateFABVisibility();
 
@@ -402,6 +520,7 @@ function loadPage(page) {
   else if (page === 'drivers') loadDrivers();
   else if (page === 'trips') loadTrips();
   else if (page === 'maintenance') loadMaintenance();
+  else if (page === 'complaints') loadComplaints();
   else if (page === 'finance') loadFinance();
   else if (page === 'audit') loadAuditLogs();
   else if (page === 'users') loadUsers();
@@ -623,15 +742,59 @@ function showDriverDetailsModal(driver) {
         </div>
         <div>
           <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Safety Rating</label>
-          <span style="font-size: 14.5px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
-            ⭐ ${driver.safetyScore} / 100
-          </span>
+          ${currentUser.role === 'safety_officer' || currentUser.role === 'fleet_manager' ? `
+            <div style="display: flex; align-items: center; gap: 6px; position: relative;">
+              <input type="number" id="driver-safety-score-input" value="${driver.safetyScore}" min="0" max="100" class="input-filter" style="width: 55px; height: 28px; padding: 2px; font-size: 13px; text-align: center; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.03); color: var(--text-main); font-weight: 600; font-family: var(--font-family);">
+              <span style="font-size: 12px; color: var(--text-secondary); font-weight: 600; margin-right: 2px;">/ 100</span>
+              <button class="update-safety-score-btn" data-id="${driver._id}" title="Save safety score" style="padding: 0; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 4px; color: #10B981; cursor: pointer; transition: all 0.2s ease; outline: none;"><i class="fa-solid fa-check" style="font-size: 12px;"></i></button>
+            </div>
+          ` : `
+            <span style="font-size: 14.5px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+              ⭐ ${driver.safetyScore} / 100
+            </span>
+          `}
         </div>
         <div>
           <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Trip Completion Rate</label>
           <span style="font-size: 14.5px; font-weight: 600;">${tripComp}</span>
         </div>
         ${leaveInfoHTML}
+      </div>
+
+      <!-- Complaints list and submission section -->
+      <div style="border-top: 1px dashed var(--border-color); padding-top: 15px; margin-top: 10px; font-family: var(--font-family);">
+        <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 6px;">Complaints / Incidents Log</label>
+        <div id="driver-complaints-list" style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--text-main); margin-bottom: 15px; padding-right: 5px;">
+          ${driver.complaints && driver.complaints.length > 0 ? 
+            driver.complaints.map(c => `
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 10px; border-radius: 4px; display: flex; flex-direction: column; gap: 6px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--text-secondary);">
+                  <div>
+                    <strong>By: ${c.submittedBy || 'System/Admin'}</strong>
+                    <span style="margin-left: 6px; font-size: 9px; padding: 2px 5px; border-radius: 3px; font-weight: 700; ${
+                      c.status === 'Resolved' ? 'background: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.3);' :
+                      c.status === 'Rejected' ? 'background: rgba(239, 68, 68, 0.15); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.3);' :
+                      'background: rgba(245, 158, 11, 0.15); color: #F59E0B; border: 1px solid rgba(245, 158, 11, 0.3);'
+                    }">${c.status || 'Pending'}</span>
+                  </div>
+                  <span>${new Date(c.createdAt).toLocaleDateString()}</span>
+                </div>
+                <div style="line-height: 1.4; font-size: 12.5px;">${c.text}</div>
+                ${(c.status === 'Pending' || !c.status) && (currentUser.role === 'safety_officer' || currentUser.role === 'fleet_manager') ? `
+                  <div style="display: flex; gap: 8px; margin-top: 4px; justify-content: flex-end;">
+                    <button class="btn resolve-complaint-btn" data-complaint-id="${c._id}" style="padding: 3px 8px; font-size: 10px; font-weight: 600; color: #10B981; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 3px; font-family: var(--font-family);"><i class="fa-solid fa-check"></i> Resolve</button>
+                    <button class="btn reject-complaint-btn" data-complaint-id="${c._id}" style="padding: 3px 8px; font-size: 10px; font-weight: 600; color: #EF4444; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 3px; font-family: var(--font-family);"><i class="fa-solid fa-xmark"></i> Reject</button>
+                  </div>
+                ` : ''}
+              </div>
+            `).join('') : '<div style="color: var(--text-secondary); font-style: italic; font-size: 12.5px;">No complaints recorded for this driver.</div>'
+          }
+        </div>
+        
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="new-complaint-input" placeholder="Enter driver complaint details..." class="input-filter" style="flex: 1; height: 36px; padding: 6px 12px; font-size: 13px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.05); color: var(--text-main);">
+          <button class="btn btn-outline submit-complaint-btn" style="height: 36px; padding: 0 16px; font-size: 12px; font-weight: 600; border-color: rgba(239, 68, 68, 0.4); color: var(--danger); background: var(--danger-glow);"><i class="fa-solid fa-triangle-exclamation"></i> File Complaint</button>
+        </div>
       </div>
 
       <div id="modal-actions-container" style="display: flex; gap: 10px; margin-top: 30px; border-top: 1px solid var(--border-color); padding-top: 20px; flex-wrap: wrap; width: 100%;">
@@ -673,6 +836,109 @@ function showDriverDetailsModal(driver) {
   const blockBtn = modalBody.querySelector('.block-driver-btn');
   const leaveBtn = modalBody.querySelector('.leave-driver-btn');
   const fireBtn = modalBody.querySelector('.fire-driver-btn');
+  const submitComplaintBtn = modalBody.querySelector('.submit-complaint-btn');
+
+  if (submitComplaintBtn) {
+    submitComplaintBtn.addEventListener('click', async () => {
+      const inputEl = modalBody.querySelector('#new-complaint-input');
+      const text = inputEl ? inputEl.value.trim() : '';
+      if (!text) {
+        showToast('Complaint text cannot be empty.', 'error');
+        return;
+      }
+      try {
+        const payload = { text };
+        await fetchAPI(`/api/drivers/${driver._id}/complaints`, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        showToast('Complaint filed successfully and reported to the Safety Officer!');
+        
+        // Refresh details modal
+        const refreshedRes = await fetchAPI(`/api/drivers/${driver._id}`);
+        if (refreshedRes && refreshedRes.status === 'success') {
+          showDriverDetailsModal(refreshedRes.data.driver);
+        }
+        loadDrivers();
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  }
+
+  // Wire resolve and reject complaint buttons
+  modalBody.querySelectorAll('.resolve-complaint-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const complaintId = btn.dataset.complaintId;
+      try {
+        await fetchAPI(`/api/drivers/${driver._id}/complaints/${complaintId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'Resolved' })
+        });
+        showToast('Complaint resolved successfully!');
+        
+        // Refresh details modal
+        const refreshedRes = await fetchAPI(`/api/drivers/${driver._id}`);
+        if (refreshedRes && refreshedRes.status === 'success') {
+          showDriverDetailsModal(refreshedRes.data.driver);
+        }
+        loadDrivers();
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  });
+
+  modalBody.querySelectorAll('.reject-complaint-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const complaintId = btn.dataset.complaintId;
+      try {
+        await fetchAPI(`/api/drivers/${driver._id}/complaints/${complaintId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'Rejected' })
+        });
+        showToast('Complaint rejected / cancelled successfully.');
+        
+        // Refresh details modal
+        const refreshedRes = await fetchAPI(`/api/drivers/${driver._id}`);
+        if (refreshedRes && refreshedRes.status === 'success') {
+          showDriverDetailsModal(refreshedRes.data.driver);
+        }
+        loadDrivers();
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  });
+
+  // Wire update safety score button
+  const updateSafetyBtn = modalBody.querySelector('.update-safety-score-btn');
+  if (updateSafetyBtn) {
+    updateSafetyBtn.addEventListener('click', async () => {
+      const inputEl = modalBody.querySelector('#driver-safety-score-input');
+      const score = inputEl ? parseInt(inputEl.value, 10) : NaN;
+      if (isNaN(score) || score < 0 || score > 100) {
+        showToast('Safety score must be a number between 0 and 100.', 'error');
+        return;
+      }
+      try {
+        await fetchAPI(`/api/drivers/${driver._id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ safetyScore: score })
+        });
+        showToast('Driver safety score updated successfully!');
+        
+        // Refresh details modal
+        const refreshedRes = await fetchAPI(`/api/drivers/${driver._id}`);
+        if (refreshedRes && refreshedRes.status === 'success') {
+          showDriverDetailsModal(refreshedRes.data.driver);
+        }
+        loadDrivers();
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  }
 
   if (unblockBtn) {
     unblockBtn.addEventListener('click', async () => {
@@ -933,6 +1199,11 @@ async function loadDrivers() {
             </div>
           `}
           <strong class="driver-name-link" style="color: var(--accent-hover); text-decoration: underline; cursor: pointer;">${driver.name}</strong>
+          ${driver.complaints && driver.complaints.filter(c => c.status === 'Pending').length > 0 ? `
+            <span class="badge badge-danger" title="${driver.complaints.filter(c => c.status === 'Pending').length} pending complaints" style="background-color: var(--danger-glow); color: var(--danger); font-size: 10px; padding: 2px 5px; border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.2); font-weight: 700; display: inline-flex; align-items: center; gap: 3px; margin-left: 5px;">
+              <i class="fa-solid fa-triangle-exclamation"></i> ${driver.complaints.filter(c => c.status === 'Pending').length}
+            </span>
+          ` : ''}
         </td>
         <td>${driver.licenseNumber}</td>
         <td>${category}</td>
@@ -959,6 +1230,163 @@ async function loadDrivers() {
     });
   } catch (err) {
     console.error(err);
+  }
+}
+
+async function loadComplaints() {
+  const container = document.getElementById('complaints-list-tbody');
+  if (!container) return;
+  container.innerHTML = '<tr><td colspan="6" class="empty-message">Loading Complaints log...</td></tr>';
+
+  try {
+    const res = await fetchAPI('/api/drivers');
+    container.innerHTML = '';
+
+    if (!res || !res.data || !res.data.drivers || res.data.drivers.length === 0) {
+      container.innerHTML = '<tr><td colspan="6" class="empty-message">No drivers found.</td></tr>';
+      return;
+    }
+
+    const complaints = [];
+    res.data.drivers.forEach(driver => {
+      if (driver.complaints && driver.complaints.length > 0) {
+        driver.complaints.forEach(c => {
+          complaints.push({
+            ...c,
+            driverId: driver._id,
+            driverName: driver.name
+          });
+        });
+      }
+    });
+
+    if (complaints.length === 0) {
+      container.innerHTML = '<tr><td colspan="6" class="empty-message">No complaints recorded.</td></tr>';
+      return;
+    }
+
+    // Sort complaints by date descending
+    complaints.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    complaints.forEach(c => {
+      const row = document.createElement('tr');
+      const dateStr = new Date(c.createdAt).toLocaleDateString();
+      const statusBadge = `
+        <span class="badge ${
+          c.status === 'Resolved' ? 'status-Available' :
+          c.status === 'Rejected' ? 'status-Suspended' :
+          'status-On-Trip'
+        }">${c.status || 'Pending'}</span>
+      `;
+
+      let actionButtons = '—';
+      if ((c.status === 'Pending' || !c.status) && (currentUser.role === 'safety_officer' || currentUser.role === 'fleet_manager')) {
+        actionButtons = `
+          <button class="btn resolve-table-btn" data-driver-id="${c.driverId}" data-complaint-id="${c._id}" style="padding:4px 8px; font-size:11px; color:#10B981; background:rgba(16, 185, 129, 0.1); border:1px solid rgba(16, 185, 129, 0.3); border-radius:3px; cursor:pointer; font-weight:600; font-family: var(--font-family);"><i class="fa-solid fa-check"></i> Resolve</button>
+          <button class="btn reject-table-btn" data-driver-id="${c.driverId}" data-complaint-id="${c._id}" style="padding:4px 8px; font-size:11px; color:#EF4444; background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239, 68, 68, 0.3); border-radius:3px; cursor:pointer; font-weight:600; margin-left:6px; font-family: var(--font-family);"><i class="fa-solid fa-xmark"></i> Reject</button>
+        `;
+      }
+
+      row.innerHTML = `
+        <td><strong style="color: var(--accent-hover);">${c.driverName}</strong></td>
+        <td><div style="max-width: 300px; word-wrap: break-word; white-space: normal; line-height: 1.4;">${c.text}</div></td>
+        <td>${c.submittedBy || 'System/Admin'}</td>
+        <td>${dateStr}</td>
+        <td>${statusBadge}</td>
+        <td>${actionButtons}</td>
+      `;
+
+      // Wire resolve/reject actions
+      const resolveBtn = row.querySelector('.resolve-table-btn');
+      if (resolveBtn) {
+        resolveBtn.addEventListener('click', async () => {
+          try {
+            await fetchAPI(`/api/drivers/${c.driverId}/complaints/${c._id}`, {
+              method: 'PATCH',
+              body: JSON.stringify({ status: 'Resolved' })
+            });
+            showToast('Complaint resolved successfully!');
+            loadComplaints();
+          } catch (err) {
+            console.error(err);
+          }
+        });
+      }
+
+      const rejectBtn = row.querySelector('.reject-table-btn');
+      if (rejectBtn) {
+        rejectBtn.addEventListener('click', async () => {
+          try {
+            await fetchAPI(`/api/drivers/${c.driverId}/complaints/${c._id}`, {
+              method: 'PATCH',
+              body: JSON.stringify({ status: 'Rejected' })
+            });
+            showToast('Complaint rejected successfully.');
+            loadComplaints();
+          } catch (err) {
+            console.error(err);
+          }
+        });
+      }
+
+      container.appendChild(row);
+    });
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function renderComplaintForm() {
+  modalContainer.classList.remove('hidden');
+  modalTitle.textContent = 'File Driver Complaint / Incident';
+  modalBody.innerHTML = 'Loading drivers list...';
+
+  try {
+    const res = await fetchAPI('/api/drivers');
+    if (!res || !res.data || !res.data.drivers || res.data.drivers.length === 0) {
+      modalBody.innerHTML = 'No drivers available to file complaints against.';
+      return;
+    }
+
+    const options = res.data.drivers.map(d => `<option value="${d._id}">${d.name} (${d.licenseNumber})</option>`).join('');
+
+    modalBody.innerHTML = `
+      <form id="create-complaint-form" style="display: flex; flex-direction: column; gap: 15px; font-family: var(--font-family); color: var(--text-main);">
+        <div class="input-group">
+          <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 5px;">Select Driver</label>
+          <select id="complaint-driver-id" required class="input-select" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-sm);">
+            ${options}
+          </select>
+        </div>
+        <div class="input-group">
+          <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 5px;">Incident Description / Safety Violation</label>
+          <textarea id="complaint-text" required placeholder="Describe the violation, speeding, accident, route deviation, or compliant..." class="input-filter" style="width: 100%; height: 100px; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-sm); resize: vertical;"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" style="background-color: var(--danger); border-color: var(--danger); font-weight: 600;"><i class="fa-solid fa-triangle-exclamation"></i> File Complaint</button>
+      </form>
+    `;
+
+    document.getElementById('create-complaint-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const driverId = document.getElementById('complaint-driver-id').value;
+      const text = document.getElementById('complaint-text').value.trim();
+
+      try {
+        await fetchAPI(`/api/drivers/${driverId}/complaints`, {
+          method: 'POST',
+          body: JSON.stringify({ text })
+        });
+        showToast('Complaint filed successfully and reported to Safety Officer!');
+        modalContainer.classList.add('hidden');
+        if (currentActivePage === 'complaints') {
+          loadComplaints();
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  } catch (err) {
+    modalBody.innerHTML = 'Failed to load drivers list.';
   }
 }
 
@@ -1482,6 +1910,7 @@ async function loadAuditLogs() {
 
 async function loadUsers() {
   const container = document.getElementById('users-list');
+  if (!container) return;
   container.innerHTML = '<tr><td colspan="6" class="empty-message">Loading users...</td></tr>';
 
   try {
@@ -1489,21 +1918,78 @@ async function loadUsers() {
     container.innerHTML = '';
 
     res.data.users.forEach(user => {
+      const isSelf = String(user._id) === String(currentUser._id);
       const row = document.createElement('tr');
       row.innerHTML = `
         <td><span class="avatar">👤</span></td>
         <td><strong>${user.name}</strong></td>
         <td>${user.email}</td>
         <td><span class="badge status-On-Trip">${user.role.replace('_', ' ')}</span></td>
-        <td><span class="badge ${user.isActive ? 'status-Available' : 'status-Retired'}">${user.isActive ? 'Active' : 'Locked'}</span></td>
         <td>
-          ${user.isActive ? `<button class="btn btn-logout lock-user-btn" data-id="${user._id}" style="padding:4px 8px; font-size:11px;">Lock Account</button>` : '—'}
+          <span class="badge ${user.isApproved ? 'status-Available' : 'status-Suspended'}">
+            ${user.isApproved ? 'Approved' : 'Pending Approval'}
+          </span>
+        </td>
+        <td>
+          ${isSelf ? '<span style="color:var(--text-secondary); font-size:12px; font-style:italic;">You</span>' : `
+            ${!user.isApproved ? `<button class="btn btn-primary approve-user-btn" data-id="${user._id}" style="padding:4px 8px; font-size:11px; margin-right:5px; background-color:#10B981; border-color:#10B981;">Approve</button>` : ''}
+            <button class="btn ${user.isActive ? 'btn-logout lock-user-btn' : 'btn-primary unlock-user-btn'}" data-id="${user._id}" style="padding:4px 8px; font-size:11px; ${!user.isActive ? 'background-color:#F59E0B; border-color:#F59E0B;' : ''}">
+              ${user.isActive ? 'Lock Account' : 'Unlock Account'}
+            </button>
+          `}
         </td>
       `;
       container.appendChild(row);
     });
+
+    document.querySelectorAll('.approve-user-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try {
+          await fetchAPI(`/api/users/${btn.dataset.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ isApproved: true })
+          });
+          showToast('User account successfully approved!');
+          loadUsers();
+        } catch (err) {
+          console.error(err);
+        }
+      });
+    });
+
+    document.querySelectorAll('.lock-user-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try {
+          await fetchAPI(`/api/users/${btn.dataset.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ isActive: false })
+          });
+          showToast('User account locked.');
+          loadUsers();
+        } catch (err) {
+          console.error(err);
+        }
+      });
+    });
+
+    document.querySelectorAll('.unlock-user-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try {
+          await fetchAPI(`/api/users/${btn.dataset.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ isActive: true })
+          });
+          showToast('User account unlocked.');
+          loadUsers();
+        } catch (err) {
+          console.error(err);
+        }
+      });
+    });
   } catch (err) {}
 }
+
+
 
 // Financial tab button selection triggers
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -1535,6 +2021,9 @@ async function handleLogout() {
   accessToken = null;
   currentUser = null;
   if (refreshInterval) clearInterval(refreshInterval);
+
+  const actOverlay = document.getElementById('driver-activation-overlay');
+  if (actOverlay) actOverlay.remove();
 
   appView.classList.add('hidden');
   loginView.classList.remove('hidden');
@@ -1862,10 +2351,32 @@ async function renderTripForm() {
     const driversData = await fetchAPI('/api/drivers');
 
     const availableVehicles = vehiclesData.data.vehicles.filter(v => v.status === 'Available');
-    const availableDrivers = driversData.data.drivers.filter(d => d.status === 'Available');
-
     let vehOptions = availableVehicles.map(v => `<option value="${v._id}">${v.registrationNumber} (Max ${v.capacityKg} kg)</option>`).join('');
-    let drvOptions = availableDrivers.map(d => `<option value="${d._id}">${d.name}</option>`).join('');
+
+    let drvFieldHTML = '';
+    if (currentUser.role === 'driver') {
+      const myDriver = driversData.data.drivers.find(d => d.name.toLowerCase() === currentUser.name.toLowerCase());
+      if (!myDriver) {
+        modalBody.innerHTML = '<div class="empty-message" style="color:var(--danger)">No matching driver profile found for your user account.</div>';
+        return;
+      }
+      drvFieldHTML = `
+        <div class="input-group">
+          <input type="text" id="trip-drv-name" readonly value="${myDriver.name}" style="background:rgba(255,255,255,0.05); color:var(--text-secondary); cursor:not-allowed;">
+          <input type="hidden" id="trip-drv" value="${myDriver._id}">
+          <label for="trip-drv-name" style="background:#090B15; padding:0 4px; font-size:11px; color:var(--text-secondary); transform:translateY(-130%) scale(0.9); top:0;"><i class="fa-solid fa-user-tie"></i> Driver Name</label>
+        </div>
+      `;
+    } else {
+      const availableDrivers = driversData.data.drivers.filter(d => d.status === 'Available');
+      let drvOptions = availableDrivers.map(d => `<option value="${d._id}">${d.name}</option>`).join('');
+      drvFieldHTML = `
+        <div class="input-group">
+          <select id="trip-drv" required>${drvOptions ? drvOptions : '<option value="">No available drivers</option>'}</select>
+          <label for="trip-drv"><i class="fa-solid fa-user-tie"></i> Select Available Driver</label>
+        </div>
+      `;
+    }
 
     modalBody.innerHTML = `
       <form id="create-trip-form">
@@ -1873,10 +2384,7 @@ async function renderTripForm() {
           <select id="trip-veh" required>${vehOptions ? vehOptions : '<option value="">No available vehicles</option>'}</select>
           <label for="trip-veh"><i class="fa-solid fa-truck"></i> Select Available Vehicle</label>
         </div>
-        <div class="input-group">
-          <select id="trip-drv" required>${drvOptions ? drvOptions : '<option value="">No available drivers</option>'}</select>
-          <label for="trip-drv"><i class="fa-solid fa-user-tie"></i> Select Available Driver</label>
-        </div>
+        ${drvFieldHTML}
         <div class="input-group">
           <input type="text" id="trip-source" required placeholder=" ">
           <label for="trip-source"><i class="fa-solid fa-location-dot"></i> Source Location</label>
@@ -2107,6 +2615,10 @@ document.getElementById('btn-add-driver-mockup')?.addEventListener('click', () =
   renderDriverForm();
 });
 
+document.getElementById('btn-add-complaint')?.addEventListener('click', () => {
+  renderComplaintForm();
+});
+
 document.querySelectorAll('.toggle-stat-btn').forEach(btn => {
   btn.addEventListener('click', async () => {
     if (!selectedDriverId) {
@@ -2126,3 +2638,33 @@ document.querySelectorAll('.toggle-stat-btn').forEach(btn => {
     }
   });
 });
+
+async function restoreSession() {
+  const loadingOverlay = document.getElementById('app-loading-overlay');
+  try {
+    const refreshed = await performSilentRefresh();
+    if (refreshed) {
+      const meRes = await fetchAPI('/api/auth/me');
+      if (meRes && meRes.status === 'success') {
+        currentUser = meRes.data.user;
+        initializeDashboard();
+        if (loadingOverlay) {
+          loadingOverlay.style.opacity = '0';
+          setTimeout(() => loadingOverlay.remove(), 300);
+        }
+        return;
+      }
+    }
+  } catch (err) {
+    console.warn('No active session found on page load.');
+  }
+
+  // Show login view if unauthenticated
+  loginView.classList.remove('hidden');
+  if (loadingOverlay) {
+    loadingOverlay.style.opacity = '0';
+    setTimeout(() => loadingOverlay.remove(), 300);
+  }
+}
+
+restoreSession();

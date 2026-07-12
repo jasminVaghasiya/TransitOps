@@ -61,6 +61,14 @@ const driverSchema = new mongoose.Schema(
     photo: {
       type: String,
     },
+    complaints: [
+      {
+        text: { type: String, required: true },
+        submittedBy: { type: String },
+        status: { type: String, enum: ['Pending', 'Resolved', 'Rejected'], default: 'Pending' },
+        createdAt: { type: Date, default: Date.now },
+      }
+    ],
     isDeleted: {
       type: Boolean,
       default: false,

@@ -1639,3 +1639,24 @@ body.light-theme .tab-btn:hover {
   background: rgba(0, 0, 0, 0.03);
 }
 
+/* Custom number input spinner hiding & selection color styling */
+#driver-safety-score-input {
+  outline: none;
+  -moz-appearance: textfield;
+}
+#driver-safety-score-input::-webkit-inner-spin-button,
+#driver-safety-score-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+#driver-safety-score-input::selection {
+  background: var(--accent-glow) !important;
+  color: var(--accent-hover) !important;
+}
+
+/* Custom single-column layout when default panel is hidden */
+.login-container.no-default-panel {
+  grid-template-columns: 1fr !important;
+  max-width: 480px !important;
+}
+

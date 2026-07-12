@@ -11,7 +11,7 @@ export default class UserPolicy extends BasePolicy {
 
     // Prevent non-super-admins or managers from creating high-role accounts
     const targetRole = req.body?.role;
-    if (targetRole === 'admin' && actor.role !== 'admin') {
+    if (targetRole === 'fleet_manager' && actor.role !== 'fleet_manager') {
       return this.deny('You cannot create a user with a higher privilege than yourself', 'ROLE_ELEVATION');
     }
 
@@ -37,7 +37,7 @@ export default class UserPolicy extends BasePolicy {
       }
 
       // 2. Prevent stripping own admin role
-      if (actor.role === 'admin' && req.body?.role && req.body.role !== 'admin') {
+      if (actor.role === 'fleet_manager' && req.body?.role && req.body.role !== 'fleet_manager') {
         return this.deny('You cannot remove the administrator role from yourself', 'SELF_ROLE_DOWNGRADE_DENIED');
       }
     }

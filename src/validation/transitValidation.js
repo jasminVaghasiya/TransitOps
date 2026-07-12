@@ -76,7 +76,7 @@ export const userAdminUpdateSchema = Joi.object({
   name: Joi.string().trim().min(2).max(50),
   email: Joi.string().trim().email(),
   password: Joi.string().min(8),
-  role: Joi.string().valid('fleet_manager', 'dispatcher', 'safety_officer', 'financial_analyst', 'admin', 'read_only'),
+  role: Joi.string().valid('fleet_manager', 'driver', 'safety_officer', 'financial_analyst'),
   isActive: Joi.boolean(),
 });
 

@@ -1,5 +1,6 @@
 import express from 'express';
 import Driver from '../models/Driver.js';
+import User from '../models/User.js';
 import { protect } from '../middleware/auth.js';
 import { attachAbility, authorize, policyGate } from '../middleware/rbac.js';
 import { validateBody } from '../middleware/validate.js';
@@ -181,5 +182,77 @@ router.delete(
     }
   }
 );
+
+/**
+ * @route   POST /api/drivers/:id/complaints
+ * @desc    File a complaint against a driver (accessible to any authenticated role)
+ */
+router.post('/:id/complaints', async (req, res, next) => {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ status: 'fail', message: 'Complaint text is required' });
+    }
+
+    const driver = await Driver.findById(req.params.id);
+    if (!driver) {
+      return res.status(404).json({ status: 'fail', message: 'Driver not found' });
+    }
+
+    driver.complaints.push({
+      text,
+      submittedBy: req.user.name || req.user.role,
+      createdAt: new Date(),
+    });
+
+    await driver.save();
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Complaint filed successfully',
+      data: { driver },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route   PATCH /api/drivers/:id/complaints/:complaintId
+ * @desc    Resolve or Reject a driver complaint (Safety Officer or Fleet Manager)
+ */
+router.patch('/:id/complaints/:complaintId', async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    if (!['Resolved', 'Rejected'].includes(status)) {
+      return res.status(400).json({ status: 'fail', message: 'Invalid complaint status' });
+    }
+
+    if (req.user.role !== 'safety_officer' && req.user.role !== 'fleet_manager') {
+      return res.status(403).json({ status: 'fail', message: 'Only Safety Officers or Fleet Managers can resolve/reject complaints' });
+    }
+
+    const driver = await Driver.findById(req.params.id);
+    if (!driver) {
+      return res.status(404).json({ status: 'fail', message: 'Driver not found' });
+    }
+
+    const complaint = driver.complaints.id(req.params.complaintId);
+    if (!complaint) {
+      return res.status(404).json({ status: 'fail', message: 'Complaint not found' });
+    }
+
+    complaint.status = status;
+    await driver.save();
+
+    res.status(200).json({
+      status: 'success',
+      message: `Complaint marked as ${status} successfully`,
+      data: { driver },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 export default router;

@@ -19,12 +19,27 @@
   <!-- Toast Notification Box -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
+  <!-- Full-Screen Loading Overlay -->
+  <style>
+    @keyframes pulse-loading {
+      0% { transform: scale(1); opacity: 0.7; }
+      50% { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(1); opacity: 0.7; }
+    }
+  </style>
+  <div id="app-loading-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #090B15; display: flex; align-items: center; justify-content: center; z-index: 9999; font-family: 'Inter', sans-serif;">
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+      <i class="fa-solid fa-truck-fast" style="font-size: 40px; color: #92400E; animation: pulse-loading 1.5s infinite ease-in-out;"></i>
+      <div style="font-size: 14px; color: #9CA3AF; font-weight: 500; letter-spacing: 2px; text-transform: uppercase;">TransitOps...</div>
+    </div>
+  </div>
+
   <!-- ==========================================
        LOGIN VIEW SCREEN
        ========================================== -->
-  <main id="login-view" class="login-view">
-    <div class="login-container glass">
-      <!-- Left Info & Role Auto-loader Panel -->
+  <main id="login-view" class="login-view hidden">
+    <div class="login-container glass no-default-panel">
+      <!-- Left Info & Role Auto-loader Panel (Disabled for production layout)
       <div class="login-info-panel">
         <div>
           <div class="logo" style="justify-content: flex-start; color: #1F2937;">
@@ -39,20 +54,14 @@
               <li class="role-item" data-email="manager@transitops.com" data-role="fleet_manager">
                 <span class="role-bullet"></span> Fleet Manager
               </li>
-              <li class="role-item" data-email="dispatcher@transitops.com" data-role="dispatcher">
-                <span class="role-bullet"></span> Dispatcher
+              <li class="role-item" data-email="driver@transitops.com" data-role="driver">
+                <span class="role-bullet"></span> Driver
               </li>
               <li class="role-item" data-email="safety@transitops.com" data-role="safety_officer">
                 <span class="role-bullet"></span> Safety Officer
               </li>
               <li class="role-item" data-email="finance@transitops.com" data-role="financial_analyst">
                 <span class="role-bullet"></span> Financial Analyst
-              </li>
-              <li class="role-item" data-email="admin@transitops.com" data-role="admin">
-                <span class="role-bullet"></span> Administrator
-              </li>
-              <li class="role-item" data-email="auditor@transitops.com" data-role="read_only">
-                <span class="role-bullet"></span> Auditor (Read-Only)
               </li>
             </ul>
           </div>
@@ -62,12 +71,13 @@
           <p>TRANSITOPS &copy; 2026 &bull; RBAC ENABLED</p>
         </footer>
       </div>
+      -->
 
       <!-- Right Login Credentials Form Panel -->
       <div class="login-form-panel">
         <div class="form-header">
-          <h2>Sign in to your account</h2>
-          <p>Enter your credentials to continue</p>
+          <h2 id="login-panel-title">Sign in to your account</h2>
+          <p id="login-panel-subtitle">Enter your credentials to continue</p>
         </div>
 
         <!-- Dashboard error indicator dashed red block -->
@@ -88,34 +98,74 @@
             <label for="login-password">PASSWORD</label>
           </div>
 
-          <div class="input-group">
-            <select id="login-role" required>
-              <option value="fleet_manager">Fleet Manager</option>
-              <option value="dispatcher">Dispatcher</option>
-              <option value="safety_officer">Safety Officer</option>
-              <option value="financial_analyst">Financial Analyst</option>
-              <option value="admin">Administrator</option>
-              <option value="read_only">Auditor (Read-Only)</option>
-            </select>
-            <label for="login-role">ROLE (RBAC)</label>
-          </div>
+
 
           <div class="form-options">
             <label class="remember-me">
               <input type="checkbox" id="remember-me-check">
               <span>Remember me</span>
             </label>
-            <a href="#" class="forgot-pass">Forgot password?</a>
+            <a href="#" class="forgot-pass" id="link-to-forgot">Forgot password?</a>
           </div>
 
           <button type="submit" class="btn btn-primary btn-block ripple-btn" style="background-color: #92400E; box-shadow: 0 4px 14px rgba(146, 64, 14, 0.4); margin-top: 10px;">Sign In</button>
+
+          <div style="margin-top: 15px; text-align: center; font-size: 13px; color: var(--text-secondary);">
+            Don't have an account? <a href="#" id="link-to-signup" style="color: var(--accent-hover); font-weight: 600; text-decoration: underline;">Sign Up</a>
+          </div>
+        </form>
+
+        <form id="signup-form" class="login-form hidden">
+          <div class="input-group">
+            <input type="text" id="signup-name" required placeholder=" ">
+            <label for="signup-name">FULL NAME</label>
+          </div>
+          
+          <div class="input-group">
+            <input type="email" id="signup-email" required placeholder=" ">
+            <label for="signup-email">EMAIL</label>
+          </div>
+          
+          <div class="input-group">
+            <input type="password" id="signup-password" required placeholder=" ">
+            <label for="signup-password">PASSWORD</label>
+          </div>
+
+          <div class="input-group">
+            <select id="signup-role" required>
+              <option value="fleet_manager">Fleet Manager</option>
+              <option value="driver">Driver</option>
+              <option value="safety_officer">Safety Officer</option>
+              <option value="financial_analyst">Financial Analyst</option>
+            </select>
+            <label for="signup-role">ROLE (RBAC)</label>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block ripple-btn" style="background-color: #92400E; box-shadow: 0 4px 14px rgba(146, 64, 14, 0.4); margin-top: 10px;">Sign Up</button>
+
+          <div style="margin-top: 15px; text-align: center; font-size: 13px; color: var(--text-secondary);">
+            Already have an account? <a href="#" id="link-to-signin-from-signup" style="color: var(--accent-hover); font-weight: 600; text-decoration: underline;">Sign In</a>
+          </div>
+        </form>
+
+        <form id="forgot-form" class="login-form hidden">
+          <div class="input-group">
+            <input type="email" id="forgot-email" required placeholder=" ">
+            <label for="forgot-email">EMAIL ADDRESS</label>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block ripple-btn" style="background-color: #92400E; box-shadow: 0 4px 14px rgba(146, 64, 14, 0.4); margin-top: 10px;">Send Reset Link</button>
+
+          <div style="margin-top: 15px; text-align: center; font-size: 13px; color: var(--text-secondary);">
+            Back to <a href="#" id="link-to-signin-from-forgot" style="color: var(--accent-hover); font-weight: 600; text-decoration: underline;">Sign In</a>
+          </div>
         </form>
 
         <div class="role-scope-info">
           <p>Access is scoped by role after login:</p>
           <ul>
-            <li>&bull; Fleet Manager &rarr; Fleet, Maintenance</li>
-            <li>&bull; Dispatcher &rarr; Dashboard, Trips</li>
+            <li>&bull; Fleet Manager &rarr; Fleet, Maintenance, Trips</li>
+            <li>&bull; Driver &rarr; Dashboard, Trips</li>
             <li>&bull; Safety Officer &rarr; Drivers, Compliance</li>
             <li>&bull; Financial Analyst &rarr; Fuel & Expenses, Analytics</li>
           </ul>
@@ -155,17 +205,16 @@
 
       <nav class="sidebar-nav">
         <ul>
-          <li><a href="#" class="nav-link active" data-page="dashboard"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
+          <li><a href="#" class="nav-link active" data-page="dashboard" id="nav-dashboard"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
           <li><a href="#" class="nav-link" data-page="vehicles" id="nav-vehicles"><i class="fa-solid fa-truck-moving"></i> <span>Vehicles</span></a></li>
           <li><a href="#" class="nav-link" data-page="drivers" id="nav-drivers"><i class="fa-solid fa-id-card"></i> <span>Drivers</span></a></li>
           <li><a href="#" class="nav-link" data-page="trips" id="nav-trips"><i class="fa-solid fa-route"></i> <span>Trips</span></a></li>
           <li><a href="#" class="nav-link" data-page="finance" id="nav-finance"><i class="fa-solid fa-gas-pump"></i> <span>Fuel & Expenses</span></a></li>
           <li><a href="#" class="nav-link" data-page="maintenance" id="nav-maintenance"><i class="fa-solid fa-screwdriver-wrench"></i> <span>Maintenance</span></a></li>
+          <li><a href="#" class="nav-link" data-page="complaints" id="nav-complaints"><i class="fa-solid fa-triangle-exclamation"></i> <span>Complaints</span></a></li>
           <li><a href="#" class="nav-link" data-page="documents" id="nav-documents"><i class="fa-solid fa-file-invoice"></i> <span>Documents</span></a></li>
           <li><a href="#" class="nav-link" data-page="reports" id="nav-reports"><i class="fa-solid fa-chart-line"></i> <span>Reports</span></a></li>
-          <li><a href="#" class="nav-link" data-page="audit" id="nav-audit"><i class="fa-solid fa-clock-rotate-left"></i> <span>Audit Logs</span></a></li>
-          <li><a href="#" class="nav-link" data-page="users" id="nav-users"><i class="fa-solid fa-users-gear"></i> <span>Users</span></a></li>
-          <li><a href="#" class="nav-link" data-page="roles" id="nav-roles"><i class="fa-solid fa-user-shield"></i> <span>Roles</span></a></li>
+          <li><a href="#" class="nav-link" data-page="users" id="nav-users"><i class="fa-solid fa-users"></i> <span>Users</span></a></li>
           <li><a href="#" class="nav-link" data-page="settings" id="nav-settings"><i class="fa-solid fa-sliders"></i> <span>Settings</span></a></li>
         </ul>
       </nav>
@@ -613,6 +662,31 @@
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+        <!-- ==========================================
+             PAGE: COMPLAINTS
+             ========================================== -->
+        <section id="page-complaints" class="page-content hidden">
+          <div class="page-header-row" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <h1 style="font-size: 24px; font-weight: 700; color: var(--text-main); font-family: var(--font-family);">Complaints & Incident Reports</h1>
+            <button class="btn btn-primary" id="btn-add-complaint" style="background-color: var(--danger); border-color: var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> File New Complaint</button>
+          </div>
+
+          <div class="table-container glass">
+            <table id="complaints-table">
+              <thead>
+                <tr>
+                  <th>Driver</th>
+                  <th>Complaint/Incident Details</th>
+                  <th>Filed By</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="complaints-list-tbody"></tbody>
+            </table>
           </div>
         </section>
 

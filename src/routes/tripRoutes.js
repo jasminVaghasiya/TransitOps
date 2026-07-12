@@ -13,7 +13,7 @@ import { writeAuditLog } from '../middleware/audit.js';
 const router = express.Router();
 
 router.use(protect);
-router.use(attachAbility);
+router.use(attachAbility); 
 
 const loadTrip = async (req) => {
   return await Trip.findById(req.params.id);
@@ -48,6 +48,20 @@ const executeWithTransaction = async (operation) => {
   }
 };
 
+const enforceDriverOwnCreation = async (req, res, next) => {
+  if (req.user && req.user.role === 'driver') {
+    const driverRecord = await Driver.findOne({ name: { $regex: new RegExp('^' + req.user.name + '$', 'i') } });
+    if (!driverRecord) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'No driver profile matches this user account',
+      });
+    }
+    req.body.driver = String(driverRecord._id);
+  }
+  next();
+};
+
 /**
  * @route   POST /api/trips
  * @desc    Create a new trip (Draft by default)
@@ -55,6 +69,7 @@ const executeWithTransaction = async (operation) => {
 router.post(
   '/',
   authorize('create', 'Trip'),
+  enforceDriverOwnCreation,
   validateBody(tripSchema),
   policyGate(TripPolicy, 'canCreate'),
   async (req, res, next) => {
@@ -97,10 +112,20 @@ router.get('/', authorize('read', 'Trip'), async (req, res, next) => {
 
     const query = { isDeleted: { $ne: true } };
 
+    // If logged-in user is a driver, restrict search to only their own trips
+    if (req.user && req.user.role === 'driver') {
+      const driverRecord = await Driver.findOne({ name: { $regex: new RegExp('^' + req.user.name + '$', 'i') } });
+      if (driverRecord) {
+        query.driver = driverRecord._id;
+      } else {
+        query.driver = new mongoose.Types.ObjectId();
+      }
+    }
+
     // Direct filters
     if (status) query.status = status;
     if (vehicle) query.vehicle = vehicle;
-    if (driver) query.driver = driver;
+    if (driver && (!req.user || req.user.role !== 'driver')) query.driver = driver;
 
     // Sub-string case-insensitive search
     if (source) query.source = { $regex: source, $options: 'i' };

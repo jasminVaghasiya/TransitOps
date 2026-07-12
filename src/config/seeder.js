@@ -11,40 +11,32 @@ export const seedDatabase = async () => {
       console.log('Database empty. Seeding default TransitOps roles...');
       const defaultUsers = [
         {
-          name: 'System Administrator',
-          email: 'admin@transitops.com',
-          password: 'password123Secure!',
-          role: 'admin',
-        },
-        {
           name: 'Fleet Manager User',
           email: 'manager@transitops.com',
           password: 'password123Secure!',
           role: 'fleet_manager',
+          isApproved: true,
         },
         {
-          name: 'Dispatcher User',
-          email: 'dispatcher@transitops.com',
+          name: 'Driver User',
+          email: 'driver@transitops.com',
           password: 'password123Secure!',
-          role: 'dispatcher',
+          role: 'driver',
+          isApproved: true,
         },
         {
           name: 'Safety Officer User',
           email: 'safety@transitops.com',
           password: 'password123Secure!',
           role: 'safety_officer',
+          isApproved: true,
         },
         {
           name: 'Financial Analyst User',
           email: 'finance@transitops.com',
           password: 'password123Secure!',
           role: 'financial_analyst',
-        },
-        {
-          name: 'Read Only Auditor',
-          email: 'auditor@transitops.com',
-          password: 'password123Secure!',
-          role: 'read_only',
+          isApproved: true,
         },
       ];
       // Mongoose hooks automatically hash the passwords during .create()
