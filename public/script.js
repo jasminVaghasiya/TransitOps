@@ -210,6 +210,8 @@ loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = loginEmailInput.value;
   const password = loginPasswordInput.value;
+  const errorBox = document.getElementById('login-error-box');
+  if (errorBox) errorBox.classList.add('hidden');
 
   try {
     const response = await fetchAPI('/api/auth/login', {
@@ -224,14 +226,24 @@ loginForm.addEventListener('submit', async (e) => {
       showToast(`Logged in successfully. Welcome back, ${currentUser.name}!`, 'success');
       initializeDashboard();
     }
-  } catch (error) {}
+  } catch (error) {
+    if (errorBox) {
+      errorBox.classList.remove('hidden');
+      const errorMsg = document.getElementById('login-error-message');
+      if (errorMsg) errorMsg.textContent = error.message || 'Invalid credentials.';
+    }
+  }
 });
 
 // Demo Buttons quick credentials loader
-document.querySelectorAll('.demo-btn').forEach(btn => {
+document.querySelectorAll('.role-item').forEach(btn => {
   btn.addEventListener('click', () => {
     loginEmailInput.value = btn.dataset.email;
     loginPasswordInput.value = 'password123Secure!';
+    const roleSelect = document.getElementById('login-role');
+    if (roleSelect && btn.dataset.role) {
+      roleSelect.value = btn.dataset.role;
+    }
     loginForm.dispatchEvent(new Event('submit'));
   });
 });
@@ -251,6 +263,15 @@ function initializeDashboard() {
 
   // Load default dashboard
   loadPage('dashboard');
+
+  // Bind dashboard filters change events
+  const typeFilter = document.getElementById('dash-filter-type');
+  const regionFilter = document.getElementById('dash-filter-region');
+  const statusFilter = document.getElementById('dash-filter-status');
+
+  if (typeFilter) typeFilter.addEventListener('change', loadDashboardStats);
+  if (regionFilter) regionFilter.addEventListener('change', loadDashboardStats);
+  if (statusFilter) statusFilter.addEventListener('change', loadDashboardStats);
 
   // Silent refresh checker (every 10 minutes)
   if (refreshInterval) clearInterval(refreshInterval);
@@ -380,15 +401,41 @@ function loadPage(page) {
 
 async function loadDashboardStats() {
   try {
-    const veh = await fetchAPI('/api/vehicles');
-    const drv = await fetchAPI('/api/drivers');
-    const trp = await fetchAPI('/api/trips');
+    const vehicleType = document.getElementById('dash-filter-type')?.value || '';
+    const region = document.getElementById('dash-filter-region')?.value || '';
+    const status = document.getElementById('dash-filter-status')?.value || '';
 
-    document.getElementById('dash-total-vehicles').textContent = veh.data.pagination.total;
-    document.getElementById('dash-avail-vehicles').textContent = veh.data.vehicles.filter(v => v.status === 'Available').length;
-    document.getElementById('dash-total-drivers').textContent = drv.data.pagination.total;
-    document.getElementById('dash-total-trips').textContent = trp.data.pagination.total;
-  } catch (err) {}
+    // Construct query parameters
+    const params = new URLSearchParams();
+    if (vehicleType) params.append('vehicleType', vehicleType);
+    if (region) params.append('region', region);
+    if (status) params.append('status', status);
+
+    const res = await fetchAPI(`/api/dashboard/stats?${params.toString()}`);
+    if (res && res.status === 'success') {
+      const kpis = res.data.kpis;
+      
+      const activeVehiclesEl = document.getElementById('dash-active-vehicles');
+      const availVehiclesEl = document.getElementById('dash-avail-vehicles');
+      const maintVehiclesEl = document.getElementById('dash-maint-vehicles');
+      const activeTripsEl = document.getElementById('dash-active-trips');
+      const pendingTripsEl = document.getElementById('dash-pending-trips');
+      const driversDutyEl = document.getElementById('dash-drivers-duty');
+      const utilizationEl = document.getElementById('dash-utilization');
+      const fuelCostsEl = document.getElementById('dash-fuel-costs');
+
+      if (activeVehiclesEl) activeVehiclesEl.textContent = kpis.activeVehicles;
+      if (availVehiclesEl) availVehiclesEl.textContent = kpis.availableVehicles;
+      if (maintVehiclesEl) maintVehiclesEl.textContent = kpis.maintenanceVehicles;
+      if (activeTripsEl) activeTripsEl.textContent = kpis.activeTrips;
+      if (pendingTripsEl) pendingTripsEl.textContent = kpis.pendingTrips;
+      if (driversDutyEl) driversDutyEl.textContent = kpis.driversOnDuty;
+      if (utilizationEl) utilizationEl.textContent = `${kpis.fleetUtilization}%`;
+      if (fuelCostsEl) fuelCostsEl.textContent = `$${kpis.totalFuelCost.toLocaleString()}`;
+    }
+  } catch (err) {
+    console.error('Failed to load dashboard statistics:', err);
+  }
 }
 
 async function loadVehicles() {
@@ -551,6 +598,140 @@ async function loadDrivers() {
   } catch (err) {}
 }
 
+// One-time delegated click handler for all trip card buttons
+(function setupTripsDelegation() {
+  const container = document.getElementById('trips-list');
+  if (!container) return;
+
+  container.addEventListener('click', async (e) => {
+    const dispatchBtn = e.target.closest('.dispatch-btn');
+    const completeBtn = e.target.closest('.complete-btn');
+    const cancelBtn   = e.target.closest('.cancel-btn');
+    const trackBtn    = e.target.closest('.track-btn');
+
+    if (dispatchBtn) {
+      try {
+        await fetchAPI(`/api/trips/${dispatchBtn.dataset.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'Dispatched' })
+        });
+        showToast('Trip Dispatched! Assets locked.');
+        loadTrips();
+      } catch (err) { /* toast already shown by fetchAPI */ }
+
+    } else if (completeBtn) {
+      try {
+        await fetchAPI(`/api/trips/${completeBtn.dataset.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'Completed' })
+        });
+        showToast('Trip Completed successfully!');
+        loadTrips();
+      } catch (err) { /* toast already shown */ }
+
+    } else if (cancelBtn) {
+      if (confirm('Cancel this trip?')) {
+        try {
+          await fetchAPI(`/api/trips/${cancelBtn.dataset.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: 'Cancelled' })
+          });
+          showToast('Trip Cancelled.');
+          loadTrips();
+        } catch (err) { /* toast already shown */ }
+      }
+
+    } else if (trackBtn) {
+      openTripDetailsModal(trackBtn.dataset.id);
+    }
+  });
+})();
+
+async function openTripDetailsModal(tripId) {
+  modalContainer.classList.remove('hidden');
+  modalTitle.textContent = 'Trip Dispatch Details & Status';
+  modalBody.innerHTML = '<div class="empty-message">Loading trip analytics...</div>';
+  document.querySelector('.modal-card')?.classList.add('modal-large');
+
+  try {
+    const tripRes = await fetchAPI(`/api/trips/${tripId}`);
+    const trip = tripRes.data.trip;
+
+    let totalFuel = 0;
+    let totalOther = 0;
+
+    if (can('read', 'Expense')) {
+      try {
+        const expensesRes = await fetchAPI('/api/expenses');
+        const fuelRes = await fetchAPI('/api/expenses/fuel');
+        const vehicleId = trip.vehicle?._id || trip.vehicle;
+        if (vehicleId) {
+          const tripExpenses = (expensesRes?.data?.expenses || []).filter(e => (e.vehicle?._id || e.vehicle) === vehicleId);
+          const tripFuelLogs = (fuelRes?.data?.fuelLogs || []).filter(f => (f.vehicle?._id || f.vehicle) === vehicleId);
+          totalFuel = tripFuelLogs.reduce((s, f) => s + f.cost, 0);
+          totalOther = tripExpenses.reduce((s, e) => s + e.amount, 0);
+        }
+      } catch (ex) { console.warn('Finance fetch failed:', ex); }
+    }
+
+    const financialHTML = can('read', 'Expense') ? `
+      <table style="width:100%;border-collapse:collapse;font-size:12.5px;color:var(--text-secondary);">
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.03);"><td style="padding:6px 0;font-weight:600;">Fuel Expenditures:</td><td style="padding:6px 0;color:var(--warning);text-align:right;">$ ${totalFuel.toLocaleString()}</td></tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.03);"><td style="padding:6px 0;font-weight:600;">Operational Expenses:</td><td style="padding:6px 0;color:var(--warning);text-align:right;">$ ${totalOther.toLocaleString()}</td></tr>
+        <tr style="font-size:13.5px;font-weight:bold;"><td style="padding:10px 0 0 0;">Total Cost:</td><td style="padding:10px 0 0 0;color:var(--success);text-align:right;">$ ${(totalFuel+totalOther).toLocaleString()}</td></tr>
+      </table>` : `<p style="color:var(--text-secondary);font-size:12px;"><i class="fa-solid fa-lock"></i> Financial access restricted for your role.</p>`;
+
+    modalBody.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:24px;text-align:left;margin-bottom:20px;">
+        <div style="display:flex;flex-direction:column;gap:20px;">
+          <div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:16px;display:flex;gap:16px;align-items:center;">
+            <img src="/images/driver_avatar.png" alt="Driver" style="width:80px;height:80px;border-radius:50%;border:2px solid var(--accent);object-fit:cover;">
+            <div>
+              <h4 style="margin:0;font-size:15px;color:var(--text-main);font-weight:700;">${trip.driver?.name || 'Unassigned'}</h4>
+              <p style="margin:2px 0 0;font-size:12px;color:var(--text-secondary);"><i class="fa-solid fa-phone"></i> ${trip.driver?.phone || 'N/A'}</p>
+              <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;">
+                <span class="badge status-${trip.driver?.status || 'Available'}">${trip.driver?.status || 'Available'}</span>
+                <span style="font-size:11px;color:var(--success);"><i class="fa-solid fa-shield-halved"></i> Safety: ${trip.driver?.safetyScore ?? 100}%</span>
+              </div>
+            </div>
+          </div>
+          <div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:16px;display:flex;gap:16px;align-items:center;">
+            <img src="/images/cargo_truck.png" alt="Vehicle" style="width:100px;height:65px;border-radius:6px;border:1px solid var(--border-color);object-fit:cover;">
+            <div>
+              <h4 style="margin:0;font-size:15px;color:var(--text-main);font-weight:700;">${trip.vehicle?.make || 'Unknown'} ${trip.vehicle?.modelName || ''}</h4>
+              <p style="margin:2px 0 0;font-size:12px;color:var(--text-secondary);"><i class="fa-solid fa-hashtag"></i> ${trip.vehicle?.registrationNumber || 'N/A'}</p>
+              <p style="margin:2px 0 0;font-size:11px;color:var(--text-secondary);">Capacity: <strong>${(trip.vehicle?.capacityKg||0).toLocaleString()} Kg</strong></p>
+              <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;">
+                <span class="badge" style="background:var(--accent-glow);color:var(--accent-hover);">${trip.vehicle?.region || 'N/A'} Region</span>
+                <span class="badge status-${trip.vehicle?.status || 'Available'}">${trip.vehicle?.status || 'Available'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:20px;">
+          <div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:18px;">
+            <h3 style="margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--accent-hover);border-bottom:1px solid var(--border-color);padding-bottom:6px;"><i class="fa-solid fa-circle-info"></i> Trip Metadata</h3>
+            <table style="width:100%;border-collapse:collapse;font-size:12.5px;color:var(--text-secondary);">
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.03);"><td style="padding:6px 0;font-weight:600;">Origin:</td><td style="padding:6px 0;color:var(--text-main);text-align:right;">${trip.source}</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.03);"><td style="padding:6px 0;font-weight:600;">Destination:</td><td style="padding:6px 0;color:var(--text-main);text-align:right;">${trip.destination}</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.03);"><td style="padding:6px 0;font-weight:600;">Cargo:</td><td style="padding:6px 0;color:var(--text-main);text-align:right;">${trip.cargoDescription}</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.03);"><td style="padding:6px 0;font-weight:600;">Weight:</td><td style="padding:6px 0;color:var(--text-main);text-align:right;">${(trip.cargoWeightKg||0).toLocaleString()} Kg</td></tr>
+              <tr><td style="padding:6px 0;font-weight:600;">Distance:</td><td style="padding:6px 0;color:var(--text-main);text-align:right;">${trip.distanceKm} Km</td></tr>
+            </table>
+          </div>
+          <div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:18px;">
+            <h3 style="margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--accent-hover);border-bottom:1px solid var(--border-color);padding-bottom:6px;"><i class="fa-solid fa-coins"></i> Financial & Expenses Log</h3>
+            ${financialHTML}
+          </div>
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    console.error(err);
+    modalBody.innerHTML = '<div class="empty-message" style="color:var(--danger);">Failed to retrieve trip details.</div>';
+  }
+}
+
 async function loadTrips() {
   const container = document.getElementById('trips-list');
   container.innerHTML = '<div class="empty-message" style="grid-column: 1/-1;">Loading Trips...</div>';
@@ -621,72 +802,140 @@ async function loadTrips() {
       container.appendChild(card);
     });
 
-    // Wire actions
-    document.querySelectorAll('.dispatch-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        await fetchAPI(`/api/trips/${btn.dataset.id}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ status: 'Dispatched' })
-        });
-        showToast('Trip Dispatched! Assets locked.');
-        loadTrips();
-      });
-    });
-
-    document.querySelectorAll('.complete-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        await fetchAPI(`/api/trips/${btn.dataset.id}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ status: 'Completed' })
-        });
-        showToast('Trip Completed successfully!');
-        loadTrips();
-      });
-    });
-
-    document.querySelectorAll('.cancel-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        if (confirm('Cancel this trip?')) {
-          await fetchAPI(`/api/trips/${btn.dataset.id}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ status: 'Cancelled' })
-          });
-          showToast('Trip Cancelled.');
-          loadTrips();
-        }
-      });
-    });
-
-    // Simulated Tracking Map modal popups
-    document.querySelectorAll('.track-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        modalContainer.classList.remove('hidden');
-        modalTitle.textContent = 'Live Trip Tracking Status';
-        modalBody.innerHTML = `
-          <div style="text-align:center; padding:10px;">
-            <div class="map-mock" style="height:250px; background:#1A2235; border:1px solid var(--border-color); border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; margin-bottom:20px; position:relative;">
-              <span style="font-size:36px; z-index:2;">📍</span>
-              <div style="position:absolute; width:100%; height:100%; opacity:0.1; background:radial-gradient(circle, var(--accent) 10%, transparent 60%);"></div>
-              <p style="color:var(--text-secondary); font-size:12px; z-index:2; position:absolute; bottom:15px;">Simulated live GPS data streams populated...</p>
-            </div>
-            <h3>Timeline Progress Logs</h3>
-            <div class="timeline-tracker" style="margin-top:20px;">
-              <div class="timeline-node done"><div class="node-dot"><i class="fa-solid fa-check"></i></div><span class="node-label">Hub Departure</span></div>
-              <div class="timeline-node done"><div class="node-dot"><i class="fa-solid fa-check"></i></div><span class="node-label">Checkpoint Alpha</span></div>
-              <div class="timeline-node active"><div class="node-dot">📍</div><span class="node-label">Transit</span></div>
-              <div class="timeline-node"><div class="node-dot">4</div><span class="node-label">Destination</span></div>
-            </div>
-          </div>
-        `;
-      });
-    });
-
   } catch (err) {}
 }
 
 async function loadFinance() {
   loadExpenses();
   loadFuelLogs();
+}
+
+async function loadCostSummary() {
+  const container = document.getElementById('cost-summary-container');
+  if (!container) return;
+  container.innerHTML = '<div class="empty-message">Computing operational costs...</div>';
+
+  try {
+    // Fetch all fuel logs and expenses (high limit to get all records)
+    const [fuelRes, expRes] = await Promise.all([
+      fetchAPI('/api/expenses/fuel?limit=1000'),
+      fetchAPI('/api/expenses?limit=1000'),
+    ]);
+
+    const fuelLogs = fuelRes?.data?.fuelLogs || [];
+    const expenses = expRes?.data?.expenses || [];
+
+    // Aggregate per vehicle
+    const vehicleMap = {};
+
+    fuelLogs.forEach(f => {
+      const id  = f.vehicle?._id || f.vehicle;
+      const reg = f.vehicle?.registrationNumber || id;
+      const make = `${f.vehicle?.make || ''} ${f.vehicle?.modelName || ''}`.trim();
+      if (!vehicleMap[id]) vehicleMap[id] = { reg, make, fuelCost: 0, fuelLiters: 0, expenseCost: 0, expenseCount: 0 };
+      vehicleMap[id].fuelCost   += f.cost || 0;
+      vehicleMap[id].fuelLiters += f.fuelLiters || 0;
+    });
+
+    expenses.forEach(e => {
+      const id  = e.vehicle?._id || e.vehicle;
+      const reg = e.vehicle?.registrationNumber || id;
+      const make = `${e.vehicle?.make || ''} ${e.vehicle?.modelName || ''}`.trim();
+      if (!vehicleMap[id]) vehicleMap[id] = { reg, make, fuelCost: 0, fuelLiters: 0, expenseCost: 0, expenseCount: 0 };
+      vehicleMap[id].expenseCost  += e.amount || 0;
+      vehicleMap[id].expenseCount += 1;
+    });
+
+    const vehicles = Object.values(vehicleMap);
+
+    if (vehicles.length === 0) {
+      container.innerHTML = '<div class="empty-message">No cost data available yet. Add fuel logs or expenses first.</div>';
+      return;
+    }
+
+    container.innerHTML = '';
+
+    // Grand totals row
+    const grandFuel    = vehicles.reduce((s, v) => s + v.fuelCost, 0);
+    const grandExpense = vehicles.reduce((s, v) => s + v.expenseCost, 0);
+    const grandTotal   = grandFuel + grandExpense;
+
+    const summaryBanner = document.createElement('div');
+    summaryBanner.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:8px;';
+    summaryBanner.innerHTML = `
+      <div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:20px;text-align:center;">
+        <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;"><i class="fa-solid fa-gas-pump"></i> Total Fuel Cost</div>
+        <div style="font-size:26px;font-weight:800;color:var(--warning);">$ ${grandFuel.toLocaleString()}</div>
+      </div>
+      <div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:20px;text-align:center;">
+        <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;"><i class="fa-solid fa-receipt"></i> Total Other Expenses</div>
+        <div style="font-size:26px;font-weight:800;color:var(--accent-hover);">$ ${grandExpense.toLocaleString()}</div>
+      </div>
+      <div style="background:linear-gradient(135deg,var(--accent),#4f1ea8);border:1px solid var(--accent);border-radius:var(--radius-md);padding:20px;text-align:center;box-shadow:var(--shadow-glow);">
+        <div style="font-size:11px;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;"><i class="fa-solid fa-coins"></i> Grand Operational Total</div>
+        <div style="font-size:26px;font-weight:800;color:#fff;">$ ${grandTotal.toLocaleString()}</div>
+      </div>
+    `;
+    container.appendChild(summaryBanner);
+
+    // Per-vehicle breakdown heading
+    const heading = document.createElement('h3');
+    heading.style.cssText = 'font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin:12px 0 8px;';
+    heading.innerHTML = '<i class="fa-solid fa-truck"></i>&nbsp; Per-Vehicle Breakdown';
+    container.appendChild(heading);
+
+    // Per-vehicle cards
+    vehicles.forEach(v => {
+      const total = v.fuelCost + v.expenseCost;
+      const fuelPct = total > 0 ? Math.round((v.fuelCost / total) * 100) : 0;
+      const expPct  = 100 - fuelPct;
+
+      const card = document.createElement('div');
+      card.style.cssText = 'background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:20px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;';
+      card.innerHTML = `
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <span style="font-size:18px;">🚛</span>
+            <div>
+              <div style="font-size:15px;font-weight:700;color:var(--text-main);">${v.reg}</div>
+              <div style="font-size:12px;color:var(--text-secondary);">${v.make}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:24px;flex-wrap:wrap;">
+            <div>
+              <div style="font-size:11px;color:var(--text-secondary);"><i class="fa-solid fa-gas-pump"></i> Fuel Cost</div>
+              <div style="font-size:16px;font-weight:700;color:var(--warning);">$ ${v.fuelCost.toLocaleString()}</div>
+              <div style="font-size:10px;color:var(--text-secondary);">${v.fuelLiters.toLocaleString()} Liters</div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text-secondary);"><i class="fa-solid fa-receipt"></i> Expenses</div>
+              <div style="font-size:16px;font-weight:700;color:var(--accent-hover);">$ ${v.expenseCost.toLocaleString()}</div>
+              <div style="font-size:10px;color:var(--text-secondary);">${v.expenseCount} record${v.expenseCount !== 1 ? 's' : ''}</div>
+            </div>
+          </div>
+          <!-- Cost bar -->
+          <div style="margin-top:14px;background:var(--bg-card);border-radius:99px;height:8px;overflow:hidden;">
+            <div style="display:flex;height:100%;">
+              <div style="width:${fuelPct}%;background:var(--warning);border-radius:99px 0 0 99px;"></div>
+              <div style="width:${expPct}%;background:var(--accent);border-radius:0 99px 99px 0;"></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;margin-top:4px;font-size:10px;color:var(--text-secondary);">
+            <span><span style="color:var(--warning);">&#9632;</span> Fuel ${fuelPct}%</span>
+            <span><span style="color:var(--accent);">&#9632;</span> Other ${expPct}%</span>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Total Cost</div>
+          <div style="font-size:28px;font-weight:800;color:var(--success);">$${total.toLocaleString()}</div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+
+  } catch (err) {
+    container.innerHTML = '<div class="empty-message" style="color:var(--danger);">Failed to load cost data.</div>';
+  }
 }
 
 async function loadExpenses() {
@@ -877,9 +1126,15 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.add('active');
 
     const tab = btn.dataset.tab;
-    document.getElementById('tab-content-expenses').classList.add('hidden');
-    document.getElementById('tab-content-fuel').classList.add('hidden');
-    document.getElementById(`tab-content-${tab}`).classList.remove('hidden');
+    ['expenses', 'fuel', 'cost-summary'].forEach(t => {
+      const el = document.getElementById(`tab-content-${t}`);
+      if (el) el.classList.add('hidden');
+    });
+    const target = document.getElementById(`tab-content-${tab}`);
+    if (target) target.classList.remove('hidden');
+
+    // Load cost summary on demand
+    if (tab === 'cost-summary') loadCostSummary();
   });
 });
 
@@ -909,6 +1164,7 @@ profileSignout.addEventListener('click', handleLogout);
 // ==========================================
 modalClose.addEventListener('click', () => {
   modalContainer.classList.add('hidden');
+  document.querySelector('.modal-card')?.classList.remove('modal-large');
 });
 
 floatingActionBtn.addEventListener('click', () => {
