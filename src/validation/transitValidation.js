@@ -51,7 +51,7 @@ export const maintenanceSchema = Joi.object({
   vehicle: Joi.string().custom(objectId).required(),
   description: Joi.string().trim().required(),
   cost: Joi.number().min(0).required(),
-  status: Joi.string().valid('Active', 'Closed').default('Active'),
+  status: Joi.string().valid('Active', 'Closed', 'Completed', 'Cancelled').default('Active'),
 });
 
 export const fuelLogSchema = Joi.object({
@@ -125,7 +125,7 @@ export const updateMaintenanceSchema = Joi.object({
   vehicle: Joi.string().custom(objectId).optional(),
   description: Joi.string().trim().optional(),
   cost: Joi.number().min(0).optional(),
-  status: Joi.string().valid('Active', 'Closed').optional(),
+  status: Joi.string().valid('Active', 'Closed', 'Completed', 'Cancelled').optional(),
 });
 
 export const updateExpenseSchema = Joi.object({

@@ -212,9 +212,7 @@
           <li><a href="#" class="nav-link" data-page="finance" id="nav-finance"><i class="fa-solid fa-gas-pump"></i> <span>Fuel & Expenses</span></a></li>
           <li><a href="#" class="nav-link" data-page="maintenance" id="nav-maintenance"><i class="fa-solid fa-screwdriver-wrench"></i> <span>Maintenance</span></a></li>
           <li><a href="#" class="nav-link" data-page="complaints" id="nav-complaints"><i class="fa-solid fa-triangle-exclamation"></i> <span>Complaints</span></a></li>
-          <li><a href="#" class="nav-link" data-page="documents" id="nav-documents"><i class="fa-solid fa-file-invoice"></i> <span>Documents</span></a></li>
           <li><a href="#" class="nav-link" data-page="reports" id="nav-reports"><i class="fa-solid fa-chart-line"></i> <span>Reports</span></a></li>
-          <li><a href="#" class="nav-link" data-page="users" id="nav-users"><i class="fa-solid fa-users"></i> <span>Users</span></a></li>
           <li><a href="#" class="nav-link" data-page="settings" id="nav-settings"><i class="fa-solid fa-sliders"></i> <span>Settings</span></a></li>
         </ul>
       </nav>
@@ -622,7 +620,7 @@
              ========================================== -->
         <section id="page-maintenance" class="page-content hidden">
           <div class="dashboard-grid">
-            <div class="grid-card glass">
+            <div class="grid-card glass" style="grid-column: span 2;">
               <div class="card-header">
                 <h2>Active Workshop Records</h2>
               </div>
@@ -642,26 +640,7 @@
               </div>
             </div>
 
-            <!-- Maintenance Schedule Mock Calendar -->
-            <div class="grid-card glass">
-              <div class="card-header">
-                <h2>Upcoming Fleet Services</h2>
-              </div>
-              <div class="maintenance-calendar">
-                <div class="cal-day">
-                  <span class="day-num">14</span>
-                  <div class="cal-event warning">
-                    <p>TX-890-GP Break Pads Check</p>
-                  </div>
-                </div>
-                <div class="cal-day">
-                  <span class="day-num">19</span>
-                  <div class="cal-event danger">
-                    <p>Volvo FH16 Engine Tune</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+
           </div>
         </section>
         <!-- ==========================================
@@ -690,89 +669,112 @@
           </div>
         </section>
 
-        <!-- ==========================================
-             PAGE: DOCUMENTS
-             ========================================== -->
-        <section id="page-documents" class="page-content hidden">
-          <div class="documents-grid">
-            <div class="doc-card glass">
-              <i class="fa-regular fa-file-pdf doc-icon"></i>
-              <h3>Trip_Manifest_5862.pdf</h3>
-              <p>Vehicle: TX-890-GP | Driver: John Doe</p>
-              <button class="btn btn-outline btn-block"><i class="fa-solid fa-download"></i> Download</button>
-            </div>
-            <div class="doc-card glass">
-              <i class="fa-regular fa-file-pdf doc-icon"></i>
-              <h3>Fuel_Invoice_July.pdf</h3>
-              <p>Finance Analyst | Total $1,280</p>
-              <button class="btn btn-outline btn-block"><i class="fa-solid fa-download"></i> Download</button>
-            </div>
-            <div class="doc-card glass">
-              <i class="fa-regular fa-file-word doc-icon"></i>
-              <h3>Maintenance_Spec_Volvo.docx</h3>
-              <p>Fleet Manager | Garage Notes</p>
-              <button class="btn btn-outline btn-block"><i class="fa-solid fa-download"></i> Download</button>
-            </div>
-          </div>
-        </section>
+
 
         <!-- ==========================================
              PAGE: REPORTS
              ========================================== -->
         <section id="page-reports" class="page-content hidden">
-          <div class="control-row">
-            <button class="btn btn-primary" id="btn-download-pdf"><i class="fa-solid fa-file-pdf"></i> Download PDF Report</button>
-            <button class="btn btn-outline" id="btn-download-excel"><i class="fa-solid fa-file-excel"></i> Download Excel</button>
+          <div class="control-row" style="margin-bottom: 24px;">
+            <div style="display: flex; gap: 12px;">
+              <button class="btn btn-outline" id="btn-export-csv"><i class="fa-solid fa-file-csv"></i> Export CSV Report</button>
+              <button class="btn btn-primary" id="btn-export-pdf"><i class="fa-solid fa-file-pdf"></i> Export PDF / Print</button>
+            </div>
           </div>
-          <div class="dashboard-grid">
+
+          <!-- Fleet Averages Summary KPI Cards -->
+          <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 24px;">
+            <div class="stat-card glass hover-lift" style="height: 120px; padding: 18px;">
+              <div class="stat-header">
+                <span class="stat-title">Avg Fuel Efficiency</span>
+                <i class="fa-solid fa-droplet warning-icon"></i>
+              </div>
+              <div class="stat-main" style="margin-top: 4px;">
+                <span class="stat-value" id="report-avg-fuel-efficiency" style="font-size: 26px;">-</span>
+                <span class="stat-trend green"><i class="fa-solid fa-road"></i> Km/L</span>
+              </div>
+            </div>
+
+            <div class="stat-card glass hover-lift" style="height: 120px; padding: 18px;">
+              <div class="stat-header">
+                <span class="stat-title">Fleet Utilization</span>
+                <i class="fa-solid fa-chart-pie blue-icon"></i>
+              </div>
+              <div class="stat-main" style="margin-top: 4px;">
+                <span class="stat-value" id="report-fleet-utilization" style="font-size: 26px;">-</span>
+                <span class="stat-trend green"><i class="fa-solid fa-truck"></i> Active</span>
+              </div>
+            </div>
+
+            <div class="stat-card glass hover-lift" style="height: 120px; padding: 18px;">
+              <div class="stat-header">
+                <span class="stat-title font-small">Total Operational Cost</span>
+                <i class="fa-solid fa-dollar-sign red-icon"></i>
+              </div>
+              <div class="stat-main" style="margin-top: 4px;">
+                <span class="stat-value" id="report-total-operational-cost" style="font-size: 24px;">-</span>
+                <span class="stat-trend"><i class="fa-solid fa-receipt"></i> Cumulative</span>
+              </div>
+            </div>
+
+            <div class="stat-card glass hover-lift" style="height: 120px; padding: 18px;">
+              <div class="stat-header">
+                <span class="stat-title">Avg Vehicle ROI</span>
+                <i class="fa-solid fa-percent green-icon"></i>
+              </div>
+              <div class="stat-main" style="margin-top: 4px;">
+                <span class="stat-value" id="report-avg-roi" style="font-size: 26px;">-</span>
+                <span class="stat-trend green"><i class="fa-solid fa-arrow-trend-up"></i> Yield</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- SVG Visualizations Grid -->
+          <div class="dashboard-grid" style="margin-bottom: 24px;">
             <div class="grid-card glass">
               <div class="card-header">
-                <h2>Monthly Operations Cost Breakdown</h2>
+                <h2>Fuel Efficiency by Vehicle (Km/L)</h2>
               </div>
-              <div class="chart-mock">
-                <!-- SVG bar chart -->
-                <svg viewBox="0 0 400 200" style="width: 100%; height: 100%;">
-                  <!-- Background grid -->
-                  <line x1="40" y1="20" x2="380" y2="20" stroke="rgba(255,255,255,0.05)"></line>
-                  <line x1="40" y1="70" x2="380" y2="70" stroke="rgba(255,255,255,0.05)"></line>
-                  <line x1="40" y1="120" x2="380" y2="120" stroke="rgba(255,255,255,0.05)"></line>
-                  <line x1="40" y1="170" x2="380" y2="170" stroke="rgba(255,255,255,0.1)"></line>
-                  
-                  <!-- Bar 1 -->
-                  <rect x="70" y="80" width="30" height="90" fill="#7C3AED" rx="4"></rect>
-                  <text x="75" y="190" fill="#94A3B8" font-size="10">May</text>
-                  
-                  <!-- Bar 2 -->
-                  <rect x="150" y="40" width="30" height="130" fill="#8B5CF6" rx="4"></rect>
-                  <text x="155" y="190" fill="#94A3B8" font-size="10">Jun</text>
-
-                  <!-- Bar 3 -->
-                  <rect x="230" y="60" width="30" height="110" fill="#10B981" rx="4"></rect>
-                  <text x="235" y="190" fill="#94A3B8" font-size="10">Jul</text>
-
-                  <!-- Bar 4 -->
-                  <rect x="310" y="20" width="30" height="150" fill="#F59E0B" rx="4"></rect>
-                  <text x="315" y="190" fill="#94A3B8" font-size="10">Aug</text>
-                </svg>
+              <div class="chart-mock" id="report-fuel-efficiency-graph" style="height: 240px; display: flex; align-items: center; justify-content: center; position: relative;">
+                <!-- Dynamically populated SVG Bar Chart -->
               </div>
             </div>
 
             <div class="grid-card glass">
               <div class="card-header">
-                <h2>Total Active Miles Traveled</h2>
+                <h2>Return on Investment by Vehicle (%)</h2>
               </div>
-              <div class="chart-mock">
-                <!-- SVG line chart -->
-                <svg viewBox="0 0 400 200" style="width: 100%; height: 100%;">
-                  <path d="M40,160 L120,120 L200,80 L280,130 L360,40" fill="none" stroke="#7C3AED" stroke-width="3"></path>
-                  <circle cx="120" cy="120" r="4" fill="#7C3AED"></circle>
-                  <circle cx="200" cy="80" r="4" fill="#7C3AED"></circle>
-                  <circle cx="280" cy="130" r="4" fill="#7C3AED"></circle>
-                  <circle cx="360" cy="40" r="4" fill="#7C3AED"></circle>
-                  <line x1="40" y1="170" x2="380" y2="170" stroke="rgba(255,255,255,0.1)"></line>
-                </svg>
+              <div class="chart-mock" id="report-roi-graph" style="height: 240px; display: flex; align-items: center; justify-content: center; position: relative;">
+                <!-- Dynamically populated SVG Bar Chart -->
               </div>
             </div>
+          </div>
+
+          <!-- Interactive Analytics Table -->
+          <div class="table-container glass" style="margin-top: 24px;">
+            <div class="card-header" style="border-bottom: none; margin-bottom: 10px;">
+              <h2 style="font-size: 15px;"><i class="fa-solid fa-table"></i> Vehicle Analytics breakdown</h2>
+            </div>
+            <table id="reports-table">
+              <thead>
+                <tr>
+                  <th>Vehicle</th>
+                  <th>Distance (Km)</th>
+                  <th>Fuel (L)</th>
+                  <th>Fuel Cost</th>
+                  <th>Maint Cost</th>
+                  <th>Other Expenses</th>
+                  <th>Fuel Efficiency</th>
+                  <th>Operational Cost</th>
+                  <th>Estimated Revenue</th>
+                  <th>Net Profit</th>
+                  <th>ROI (%)</th>
+                </tr>
+              </thead>
+              <tbody id="report-table-tbody">
+                <tr><td colspan="11" class="empty-message">Loading report analytics...</td></tr>
+              </tbody>
+            </table>
           </div>
         </section>
 
@@ -797,26 +799,7 @@
           </div>
         </section>
 
-        <!-- ==========================================
-             PAGE: USERS
-             ========================================== -->
-        <section id="page-users" class="page-content hidden">
-          <div class="table-container glass">
-            <table id="users-table">
-              <thead>
-                <tr>
-                  <th>User Avatar</th>
-                  <th>Full Name</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Account Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="users-list"></tbody>
-            </table>
-          </div>
-        </section>
+
 
         <!-- ==========================================
              PAGE: ROLES

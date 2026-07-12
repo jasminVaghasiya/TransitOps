@@ -19,7 +19,7 @@ const maintenanceSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['Active', 'Closed'],
+      enum: ['Active', 'Closed', 'Completed', 'Cancelled'],
       default: 'Active',
     },
     startDate: {
