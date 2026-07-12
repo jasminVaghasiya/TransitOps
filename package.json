@@ -1,0 +1,28 @@
+{
+  "name": "express-mongoose-auth",
+  "version": "1.0.0",
+  "description": "Industry-standard login/signup auth using access & refresh tokens in Express and Mongoose",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test:auth": "node src/scratch/test_auth.js",
+    "test:transitops": "node src/scratch/test_transitops.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.2.0",
+    "helmet": "^7.1.0",
+    "joi": "^18.2.3",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.3.1"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^11.2.0"
+  }
+}
