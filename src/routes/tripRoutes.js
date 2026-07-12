@@ -108,6 +108,7 @@ router.get('/', authorize('read', 'Trip'), async (req, res, next) => {
       destination,
       startDate,
       endDate,
+      search,
     } = req.query;
 
     const query = { isDeleted: { $ne: true } };
@@ -126,6 +127,15 @@ router.get('/', authorize('read', 'Trip'), async (req, res, next) => {
     if (status) query.status = status;
     if (vehicle) query.vehicle = vehicle;
     if (driver && (!req.user || req.user.role !== 'driver')) query.driver = driver;
+
+    // General query search matching multiple string properties
+    if (search) {
+      query.$or = [
+        { source: { $regex: search, $options: 'i' } },
+        { destination: { $regex: search, $options: 'i' } },
+        { cargoDescription: { $regex: search, $options: 'i' } }
+      ];
+    }
 
     // Sub-string case-insensitive search
     if (source) query.source = { $regex: source, $options: 'i' };
