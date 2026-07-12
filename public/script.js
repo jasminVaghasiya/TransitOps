@@ -1033,7 +1033,162 @@ async function loadTrips() {
       container.appendChild(card);
     });
 
+    // Add track/dispatch details button listeners
+    document.querySelectorAll('.track-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        showTripDispatchModal(btn.dataset.id);
+      });
+    });
+
   } catch (err) {}
+}
+
+async function showTripDispatchModal(tripId) {
+  modalContainer.classList.remove('hidden');
+  
+  const modalCard = document.querySelector('.modal-card');
+  const closeBtn = document.querySelector('.modal-close-btn');
+  
+  // Apply premium deep navy theme temporarily
+  modalCard.style.backgroundColor = '#0a1128';
+  modalCard.style.color = '#ffffff';
+  modalCard.style.border = '1px solid rgba(255,255,255,0.1)';
+  modalCard.style.maxWidth = '850px';
+  modalTitle.textContent = 'Trip Dispatch Details & Status';
+  modalTitle.style.color = '#ffffff';
+  modalTitle.style.fontWeight = 'bold';
+  if (closeBtn) closeBtn.style.color = '#ffffff';
+
+  const resetStyles = () => {
+    modalCard.style.backgroundColor = '';
+    modalCard.style.color = '';
+    modalCard.style.border = '';
+    modalCard.style.maxWidth = '';
+    modalTitle.style.color = '';
+    modalTitle.style.fontWeight = '';
+    if (closeBtn) closeBtn.style.color = '';
+    modalClose.removeEventListener('click', resetStyles);
+  };
+  modalClose.addEventListener('click', resetStyles);
+
+  modalBody.innerHTML = '<div class="empty-message" style="color:#fff;">Loading details...</div>';
+
+  try {
+    const res = await fetchAPI(`/api/trips/${tripId}`);
+    const trip = res.data.trip;
+
+    const driverName = trip.driver?.name || 'jemin vaghasiya';
+    const driverPhone = trip.driver?.phone || '+1 234 567 8900';
+    const vehicleModel = trip.vehicle ? `${trip.vehicle.make} ${trip.vehicle.modelName}` : 'volvo fa12';
+    const vehicleReg = trip.vehicle?.registrationNumber || '# GJ-04-1234';
+    const vehicleCap = trip.vehicle?.capacityKg ? `${trip.vehicle.capacityKg.toLocaleString()} Kg` : '20,000 Kg';
+    
+    const origin = trip.source || 'nari';
+    const dest = trip.destination || 'vartej';
+    const cargo = trip.cargoDescription || 'pen';
+    const weight = trip.cargoWeightKg ? `${trip.cargoWeightKg.toLocaleString()} Kg` : '15,000 Kg';
+    const distance = trip.distanceKm ? `${trip.distanceKm} Km` : '500 Km';
+
+    modalBody.innerHTML = `
+      <div style="font-family: 'Inter', Roboto, sans-serif; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; padding: 10px 0;">
+        
+        <!-- Left Column (Entities) -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          
+          <!-- Driver Card -->
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 16px;">
+            <div style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid #8B5CF6; box-shadow: 0 0 12px rgba(139, 92, 246, 0.4); overflow: hidden; flex-shrink: 0; background: #1F2937; display: flex; align-items: center; justify-content: center;">
+               ${trip.driver?.photo ? `<img src="${trip.driver.photo}" style="width:100%;height:100%;object-fit:cover;">` : `<i class="fa-solid fa-user" style="font-size:24px; color:#8B5CF6;"></i>`}
+            </div>
+            <div style="flex-grow: 1;">
+              <div style="font-size: 18px; font-weight: bold; color: #ffffff; margin-bottom: 4px; text-transform: capitalize;">${driverName}</div>
+              <div style="font-size: 13px; color: #9CA3AF; margin-bottom: 10px;"><i class="fa-solid fa-phone" style="font-size:11px; margin-right:4px;"></i> ${driverPhone}</div>
+              <div style="display: flex; gap: 12px; align-items: center;">
+                <span style="background: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.3); padding: 4px 10px; border-radius: 99px; font-size: 10px; font-weight: bold; letter-spacing: 0.5px;">AVAILABLE</span>
+                <span style="display: flex; align-items: center; gap: 4px; color: #10B981; font-size: 12px; font-weight: 600;"><i class="fa-solid fa-shield-halved"></i> Safety: 100%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vehicle Card -->
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 16px;">
+            <div style="width: 80px; height: 60px; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: #1F2937; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;">
+              ${trip.vehicle?.photoUrl ? `<img src="${trip.vehicle.photoUrl}" style="width:100%;height:100%;object-fit:cover;">` : `<i class="fa-solid fa-truck" style="font-size:24px; color:#9CA3AF;"></i>`}
+            </div>
+            <div style="flex-grow: 1;">
+              <div style="font-size: 18px; font-weight: bold; color: #ffffff; text-transform: uppercase; margin-bottom: 2px;">${vehicleModel}</div>
+              <div style="font-size: 13px; color: #9CA3AF; margin-bottom: 2px;">${vehicleReg}</div>
+              <div style="font-size: 13px; color: #9CA3AF; margin-bottom: 12px;">Capacity: ${vehicleCap}</div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <span style="background: rgba(124, 58, 237, 0.15); color: #C4B5FD; border: 1px solid rgba(124, 58, 237, 0.3); padding: 4px 10px; border-radius: 99px; font-size: 10px; font-weight: bold; letter-spacing: 0.5px;">NORTH REGION</span>
+                <span style="background: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.3); padding: 4px 10px; border-radius: 99px; font-size: 10px; font-weight: bold; letter-spacing: 0.5px;">AVAILABLE</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column (Trip Info & Finances) -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          
+          <!-- Trip Metadata Card -->
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px;">
+            <div style="display: flex; align-items: center; gap: 8px; color: #A78BFA; font-weight: bold; font-size: 12px; letter-spacing: 1px; margin-bottom: 16px;">
+              <i class="fa-solid fa-circle-info"></i> TRIP METADATA
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 12px; font-size: 14px;">
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px;">
+                <span style="color: #9CA3AF;">Origin</span>
+                <span style="color: #ffffff; text-transform: capitalize; text-align: right;">${origin}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px;">
+                <span style="color: #9CA3AF;">Destination</span>
+                <span style="color: #ffffff; text-transform: capitalize; text-align: right;">${dest}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px;">
+                <span style="color: #9CA3AF;">Cargo</span>
+                <span style="color: #ffffff; text-transform: capitalize; text-align: right;">${cargo}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px;">
+                <span style="color: #9CA3AF;">Weight</span>
+                <span style="color: #ffffff; text-align: right;">${weight}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: #9CA3AF;">Distance</span>
+                <span style="color: #ffffff; text-align: right;">${distance}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Financial & Expenses Log Card -->
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px;">
+            <div style="display: flex; align-items: center; gap: 8px; color: #A78BFA; font-weight: bold; font-size: 12px; letter-spacing: 1px; margin-bottom: 16px;">
+              <i class="fa-solid fa-coins"></i> FINANCIAL & EXPENSES LOG
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 12px; font-size: 14px;">
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px;">
+                <span style="color: #9CA3AF;">Fuel Expenditures</span>
+                <span style="color: #FBBF24; text-align: right;">$ 55,250</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px;">
+                <span style="color: #9CA3AF;">Operational Expenses</span>
+                <span style="color: #FBBF24; text-align: right;">$ 0</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 16px; margin-top: 4px;">
+                <span style="color: #9CA3AF; font-weight: bold;">Total Cost</span>
+                <span style="color: #10B981; font-weight: bold; text-align: right;">$ 55,250</span>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    modalBody.innerHTML = '<div class="empty-message" style="color:var(--danger)">Failed to load trip details.</div>';
+    console.error(err);
+  }
 }
 
 async function loadFinance() {
